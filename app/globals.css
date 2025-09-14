@@ -1,4 +1,7 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -124,8 +127,9 @@
   }
 }
 
-/* Leaflet CSS styles for dark theme compatibility */
+/* Adding Leaflet CSS styles for dark theme compatibility */
 @layer components {
+  /* Leaflet Dark Theme Styles */
   .leaflet-container-dark {
     background: #1e293b !important;
   }
@@ -152,6 +156,7 @@
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
   }
 
+  /* Custom marker styles */
   .leaflet-div-icon {
     background: transparent !important;
     border: none !important;
@@ -171,6 +176,7 @@
     color: white;
   }
 
+  /* Leaflet control customization for dark theme */
   .leaflet-container-dark .leaflet-control-zoom a {
     background-color: #374151 !important;
     color: #f9fafb !important;
@@ -193,6 +199,7 @@
 
 /* Accessibility Styles */
 @layer utilities {
+  /* Reduced Motion Support */
   .reduce-motion *,
   .reduce-motion *::before,
   .reduce-motion *::after {
@@ -202,6 +209,7 @@
     scroll-behavior: auto !important;
   }
 
+  /* High Contrast Mode */
   .high-contrast {
     --background: oklch(0 0 0);
     --foreground: oklch(1 0 0);
@@ -223,24 +231,54 @@
     border: 2px solid hsl(var(--foreground)) !important;
   }
 
-  .font-normal { font-size: 100%; }
-  .font-large { font-size: 110%; }
-  .font-large h1 { font-size: 3.5rem; }
-  .font-large h2 { font-size: 2.75rem; }
-  .font-large h3 { font-size: 2rem; }
-  .font-large p, .font-large span { font-size: 1.1rem; }
-  
-  .font-extra-large { font-size: 125%; }
-  .font-extra-large h1 { font-size: 4rem; }
-  .font-extra-large h2 { font-size: 3.25rem; }
-  .font-extra-large h3 { font-size: 2.5rem; }
-  .font-extra-large p, .font-extra-large span { font-size: 1.25rem; }
+  /* Font Size Adjustments */
+  .font-normal {
+    font-size: 100%;
+  }
 
+  .font-large {
+    font-size: 110%;
+  }
+
+  .font-large h1 {
+    font-size: 3.5rem;
+  }
+  .font-large h2 {
+    font-size: 2.75rem;
+  }
+  .font-large h3 {
+    font-size: 2rem;
+  }
+  .font-large p,
+  .font-large span {
+    font-size: 1.1rem;
+  }
+
+  .font-extra-large {
+    font-size: 125%;
+  }
+
+  .font-extra-large h1 {
+    font-size: 4rem;
+  }
+  .font-extra-large h2 {
+    font-size: 3.25rem;
+  }
+  .font-extra-large h3 {
+    font-size: 2.5rem;
+  }
+  .font-extra-large p,
+  .font-extra-large span {
+    font-size: 1.25rem;
+  }
+
+  /* Focus Indicators */
   *:focus-visible {
     outline: 3px solid hsl(var(--ring)) !important;
     outline-offset: 2px !important;
   }
 
+  /* Skip Links */
   .skip-link {
     position: absolute;
     top: -40px;
@@ -254,8 +292,11 @@
     transition: top 0.3s;
   }
 
-  .skip-link:focus { top: 6px; }
+  .skip-link:focus {
+    top: 6px;
+  }
 
+  /* Screen Reader Only */
   .sr-only {
     position: absolute;
     width: 1px;
@@ -268,6 +309,7 @@
     border: 0;
   }
 
+  /* Loading Screen Styles */
   .loading-screen {
     position: fixed;
     inset: 0;
@@ -275,13 +317,17 @@
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
   }
 
+  /* Ensure proper contrast for loading elements */
   .loading-screen * {
     color: white;
   }
 }
 
+/* System Preference Overrides */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -298,6 +344,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
+  /* Ensure dark mode compatibility */
   .loading-screen {
     background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
   }
