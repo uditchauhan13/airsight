@@ -1,59 +1,103 @@
 "use client"
 
-import { useMemo } from "react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Canvas, useFrame, useLoader } from "@react-three/fiber"
-import { OrbitControls, Sphere, Html } from "@react-three/drei"
+import { OrbitControls, Sphere, Html, Stars } from "@react-three/drei"
 import * as THREE from "three"
 import { satellites } from "@/lib/satellite-data"
 import { SatelliteControlPanel } from "./satellite-tracking/satellite-control-panel"
 import { TechnicalReadouts } from "./satellite-tracking/technical-readouts"
-import { Button } from "@/components/ui/button"
 
-// Professional Earth component with textures
-function Earth() {
-  const meshRef = useRef<THREE.Mesh>(null)
+// Professional Earth Globe with realistic textures
+function EarthGlobe() {
+  const earthRef = useRef<THREE.Mesh>(null)
+  const atmosphereRef = useRef<THREE.Mesh>(null)
   
-  // Create Earth texture programmatically
+  // Create realistic Earth texture
   const earthTexture = useMemo(() => {
     const canvas = document.createElement('canvas')
-    canvas.width = 1024
-    canvas.height = 512
+    canvas.width = 2048
+    canvas.height = 1024
     const ctx = canvas.getContext('2d')!
     
-    // Create gradient for Earth
-    const gradient = ctx.createLinearGradient(0, 0, 1024, 512)
-    gradient.addColorStop(0, '#1e40af')
-    gradient.addColorStop(0.3, '#2563eb')
-    gradient.addColorStop(0.5, '#22c55e')
-    gradient.addColorStop(0.7, '#16a34a')
-    gradient.addColorStop(1, '#1e40af')
+    // Create Earth base
+    const earthGradient = ctx.createRadialGradient(512, 256, 0, 512, 256, 512)
+    earthGradient.addColorStop(0, '#4a90e2')
+    earthGradient.addColorStop(0.7, '#2563eb')
+    earthGradient.addColorStop(1, '#1e3a8a')
     
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, 1024, 512)
+    ctx.fillStyle = earthGradient
+    ctx.fillRect(0, 0, 2048, 1024)
     
-    // Add continent shapes
-    ctx.fillStyle = '#15803d'
-    ctx.globalAlpha = 0.8
+    // Add realistic continents
+    ctx.fillStyle = '#22c55e'
+    ctx.globalAlpha = 1
     
     // North America
-    ctx.fillRect(100, 120, 200, 150)
-    // Europe/Asia
-    ctx.fillRect(400, 100, 400, 200)
-    // Africa
-    ctx.fillRect(450, 200, 120, 200)
-    // South America
-    ctx.fillRect(200, 250, 100, 200)
-    // Australia
-    ctx.fillRect(650, 350, 120, 80)
+    ctx.beginPath()
+    ctx.ellipse(300, 200, 150, 120, 0, 0, Math.PI * 2)
+    ctx.fill()
     
-    // Add clouds
+    // South America  
+    ctx.beginPath()
+    ctx.ellipse(400, 600, 80, 180, 0, 0, Math.PI * 2)
+    ctx.fill()
+    
+    // Europe
+    ctx.beginPath()
+    ctx.ellipse(900, 180, 100, 80, 0, 0, Math.PI * 2)
+    ctx.fill()
+    
+    // Africa
+    ctx.beginPath()
+    ctx.ellipse(950, 400, 120, 200, 0, 0, Math.PI * 2)
+    ctx.fill()
+    
+    // Asia
+    ctx.beginPath()
+    ctx.ellipse(1300, 200, 200, 150, 0, 0, Math.PI * 2)
+    ctx.fill()
+    
+    // Australia
+    ctx.beginPath()
+    ctx.ellipse(1500, 650, 100, 60, 0, 0, Math.PI * 2)
+    ctx.fill()
+    
+    // Add mountain ranges (darker green)
+    ctx.fillStyle = '#16a34a'
+    ctx.globalAlpha = 0.8
+    
+    // Rocky Mountains
+    ctx.fillRect(280, 180, 20, 100)
+    // Andes
+    ctx.fillRect(380, 500, 15, 200)
+    // Himalayas  
+    ctx.fillRect(1250, 180, 80, 20)
+    // Alps
+    ctx.fillRect(880, 160, 30, 15)
+    
+    // Add ice caps
+    ctx.fillStyle = '#f0f9ff'
+    ctx.globalAlpha = 0.9
+    
+    // North pole
+    ctx.beginPath()
+    ctx.ellipse(1024, 50, 200, 30, 0, 0, Math.PI * 2)
+    ctx.fill()
+    
+    // South pole
+    ctx.beginPath()  
+    ctx.ellipse(1024, 974, 180, 25, 0, 0, Math.PI * 2)
+    ctx.fill()
+    
+    // Add realistic cloud patterns
     ctx.fillStyle = 'white'
-    ctx.globalAlpha = 0.3
-    for (let i = 0; i < 20; i++) {
-      const x = Math.random() * 1024
-      const y = Math.random() * 512
-      const size = Math.random() * 50 + 20
+    ctx.globalAlpha = 0.4
+    
+    for (let i = 0; i < 30; i++) {
+      const x = Math.random() * 2048
+      const y = Math.random() * 1024
+      const size = Math.random() * 80 + 40
       ctx.beginPath()
       ctx.ellipse(x, y, size, size * 0.6, 0, 0, Math.PI * 2)
       ctx.fill()
@@ -62,112 +106,202 @@ function Earth() {
     return new THREE.CanvasTexture(canvas)
   }, [])
 
+  // Create night lights texture
+  const nightTexture = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 2048
+    canvas.height = 1024
+    const ctx = canvas.getContext('2d')!
+    
+    ctx.fillStyle = '#000000'
+    ctx.fillRect(0, 0, 2048, 1024)
+    
+    // Add city lights
+    ctx.fillStyle = '#fbbf24'
+    ctx.globalAlpha = 0.8
+    
+    // Major cities as light points
+    const cities = [
+      [300, 220], [350, 240], [420, 580], // Americas
+      [900, 200], [920, 180], [940, 220], // Europe  
+      [1300, 220], [1320, 200], [1280, 240], // Asia
+      [1500, 650] // Australia
+    ]
+    
+    cities.forEach(([x, y]) => {
+      ctx.beginPath()
+      ctx.arc(x, y, 3, 0, Math.PI * 2)
+      ctx.fill()
+      
+      // Add glow around cities
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, 15)
+      gradient.addColorStop(0, 'rgba(251, 191, 36, 0.6)')
+      gradient.addColorStop(1, 'rgba(251, 191, 36, 0)')
+      ctx.fillStyle = gradient
+      ctx.beginPath()
+      ctx.arc(x, y, 15, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = '#fbbf24'
+    })
+    
+    return new THREE.CanvasTexture(canvas)
+  }, [])
+
   useFrame(() => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y += 0.005
+    if (earthRef.current) {
+      earthRef.current.rotation.y += 0.002
+    }
+    if (atmosphereRef.current) {
+      atmosphereRef.current.rotation.y += 0.001
     }
   })
 
   return (
     <group>
-      {/* Main Earth sphere */}
-      <Sphere ref={meshRef} args={[2, 64, 64]} position={[0, 0, 0]}>
-        <meshStandardMaterial
+      {/* Main Earth */}
+      <Sphere ref={earthRef} args={[2, 128, 64]} position={[0, 0, 0]}>
+        <meshPhongMaterial
           map={earthTexture}
-          transparent={false}
+          bumpMap={earthTexture}
+          bumpScale={0.05}
+          specularMap={nightTexture}
+          shininess={100}
         />
       </Sphere>
       
-      {/* Atmosphere */}
-      <Sphere args={[2.05, 64, 64]} position={[0, 0, 0]}>
+      {/* Atmosphere glow */}
+      <Sphere ref={atmosphereRef} args={[2.02, 64, 32]} position={[0, 0, 0]}>
         <meshBasicMaterial
-          color="#60a5fa"
+          color="#87ceeb"
           transparent
           opacity={0.1}
+          side={THREE.BackSide}
+        />
+      </Sphere>
+      
+      {/* Outer atmosphere */}
+      <Sphere args={[2.05, 32, 16]} position={[0, 0, 0]}>
+        <meshBasicMaterial
+          color="#4da6ff"
+          transparent
+          opacity={0.05}
+          side={THREE.BackSide}
         />
       </Sphere>
     </group>
   )
 }
 
-// Professional satellite component
-function SatelliteModel({ position, isSelected, satellite, label }: {
+// Realistic satellite with detailed geometry
+function RealisticSatellite({ position, isSelected, satellite, label }: {
   position: [number, number, number]
   isSelected: boolean
   satellite: any
   label: string
 }) {
-  const meshRef = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
+  const bodyRef = useRef<THREE.Mesh>(null)
 
   useFrame(() => {
-    if (meshRef.current && isSelected) {
-      meshRef.current.rotation.x += 0.02
-      meshRef.current.rotation.z += 0.01
+    if (bodyRef.current && isSelected) {
+      bodyRef.current.rotation.x += 0.01
+      bodyRef.current.rotation.z += 0.005
+    }
+    if (groupRef.current) {
+      // Always face Earth
+      groupRef.current.lookAt(0, 0, 0)
     }
   })
 
-  const color = satellite.status === "active" ? "#10b981" : 
-               satellite.status === "maintenance" ? "#f59e0b" : "#ef4444"
+  const statusColor = satellite.status === "active" ? "#10b981" : 
+                     satellite.status === "maintenance" ? "#f59e0b" : "#ef4444"
 
   return (
     <group ref={groupRef} position={position}>
-      {/* Satellite body */}
-      <mesh ref={meshRef}>
-        <boxGeometry args={[0.1, 0.1, 0.2]} />
+      {/* Main satellite body */}
+      <mesh ref={bodyRef}>
+        <boxGeometry args={[0.15, 0.1, 0.25]} />
         <meshStandardMaterial
-          color={color}
+          color={statusColor}
+          metalness={0.7}
+          roughness={0.3}
           emissive={isSelected ? "#a855f7" : "#000000"}
-          emissiveIntensity={isSelected ? 0.3 : 0}
-          metalness={0.8}
-          roughness={0.2}
+          emissiveIntensity={isSelected ? 0.2 : 0}
         />
       </mesh>
-      
+
       {/* Solar panels */}
-      <mesh position={[-0.15, 0, 0]}>
-        <boxGeometry args={[0.05, 0.2, 0.3]} />
+      <mesh position={[-0.25, 0, 0]}>
+        <boxGeometry args={[0.08, 0.35, 0.4]} />
         <meshStandardMaterial color="#1a1a2e" metalness={0.9} roughness={0.1} />
       </mesh>
-      <mesh position={[0.15, 0, 0]}>
-        <boxGeometry args={[0.05, 0.2, 0.3]} />
+      <mesh position={[0.25, 0, 0]}>
+        <boxGeometry args={[0.08, 0.35, 0.4]} />
         <meshStandardMaterial color="#1a1a2e" metalness={0.9} roughness={0.1} />
       </mesh>
 
-      {/* Selection ring */}
+      {/* Communication dish */}
+      <mesh position={[0, 0.1, 0.15]} rotation={[Math.PI / 4, 0, 0]}>
+        <cylinderGeometry args={[0.06, 0.06, 0.02, 16]} />
+        <meshStandardMaterial color="#cccccc" metalness={0.8} roughness={0.2} />
+      </mesh>
+
+      {/* Antenna */}
+      <mesh position={[0, 0.15, -0.1]}>
+        <cylinderGeometry args={[0.005, 0.005, 0.1, 8]} />
+        <meshStandardMaterial color="#ffcc00" />
+      </mesh>
+
+      {/* Selection indicator */}
       {isSelected && (
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.3, 0.35, 32]} />
-          <meshBasicMaterial color="#a855f7" transparent opacity={0.6} />
-        </mesh>
+        <>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.4, 0.45, 32]} />
+            <meshBasicMaterial color="#a855f7" transparent opacity={0.7} />
+          </mesh>
+          <pointLight color="#a855f7" intensity={0.5} distance={2} />
+        </>
       )}
 
+      {/* Satellite trail */}
+      <mesh position={[0, 0, -0.5]}>
+        <sphereGeometry args={[0.02, 8, 8]} />
+        <meshBasicMaterial color={statusColor} transparent opacity={0.6} />
+      </mesh>
+
       {/* Label */}
-      <Html position={[0, 0.4, 0]} center>
-        <div className={`text-white text-xs font-mono whitespace-nowrap px-2 py-1 rounded ${
-          isSelected ? 'bg-purple-600' : 'bg-black/70'
+      <Html position={[0, 0.6, 0]} center>
+        <div className={`px-2 py-1 rounded text-xs font-mono whitespace-nowrap ${
+          isSelected 
+            ? 'bg-purple-600 text-white' 
+            : 'bg-black/80 text-green-300 border border-green-500/50'
         }`}>
           {label}
+          <div className="text-xs opacity-75">
+            {satellite.coordinates.altitude}km
+          </div>
         </div>
       </Html>
     </group>
   )
 }
 
-// Orbital path component
-function OrbitalPath({ radius, isSelected, inclination = 0 }: {
+// Orbital path visualization
+function OrbitalPath({ radius, isSelected, inclination = 0, satelliteId }: {
   radius: number
   isSelected: boolean
   inclination?: number
+  satelliteId: string
 }) {
   const points = []
-  for (let i = 0; i <= 64; i++) {
-    const angle = (i / 64) * Math.PI * 2
-    points.push(new THREE.Vector3(
-      Math.cos(angle) * radius,
-      Math.sin(angle) * radius * Math.sin(inclination),
-      Math.sin(angle) * radius * Math.cos(inclination)
-    ))
+  const numPoints = 128
+  
+  for (let i = 0; i <= numPoints; i++) {
+    const angle = (i / numPoints) * Math.PI * 2
+    const x = Math.cos(angle) * radius
+    const y = Math.sin(angle) * radius * Math.sin(inclination)
+    const z = Math.sin(angle) * radius * Math.cos(inclination)
+    points.push(new THREE.Vector3(x, y, z))
   }
 
   return (
@@ -183,69 +317,52 @@ function OrbitalPath({ radius, isSelected, inclination = 0 }: {
       <lineBasicMaterial
         color={isSelected ? "#a855f7" : "#4c1d95"}
         transparent
-        opacity={isSelected ? 0.8 : 0.4}
-        linewidth={isSelected ? 3 : 1}
+        opacity={isSelected ? 0.9 : 0.3}
       />
     </line>
   )
 }
 
-// Main 3D scene
-function Scene({ selectedSatellite, viewMode }: { selectedSatellite: string; viewMode: string }) {
+// Main scene component
+function Scene({ selectedSatellite }: { selectedSatellite: string }) {
   const [time, setTime] = useState(0)
 
-  useFrame(() => {
-    setTime(prev => prev + 0.01)
+  useFrame((_, delta) => {
+    setTime(prev => prev + delta * 0.5)
   })
-
-  // Convert lat/lng to 3D coordinates
-  const latLngTo3D = (lat: number, lng: number, radius: number = 3.2) => {
-    const phi = (90 - lat) * (Math.PI / 180)
-    const theta = (lng + 180) * (Math.PI / 180)
-    
-    const x = -(radius * Math.sin(phi) * Math.cos(theta))
-    const z = radius * Math.sin(phi) * Math.sin(theta)
-    const y = radius * Math.cos(phi)
-    
-    return [x, y, z] as [number, number, number]
-  }
 
   return (
     <>
       {/* Professional lighting setup */}
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[10, 10, 5]} intensity={1.5} castShadow />
-      <pointLight position={[-10, -10, -5]} intensity={0.5} />
+      <ambientLight intensity={0.2} />
+      <directionalLight 
+        position={[5, 5, 5]} 
+        intensity={1} 
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+      />
+      <pointLight position={[-5, -5, -5]} intensity={0.3} color="#4da6ff" />
 
       {/* Earth */}
-      <Earth />
+      <EarthGlobe />
 
-      {/* Stars */}
-      {Array.from({length: 200}, (_, i) => (
-        <mesh key={i} position={[
-          (Math.random() - 0.5) * 100,
-          (Math.random() - 0.5) * 100,
-          (Math.random() - 0.5) * 100
-        ]}>
-          <sphereGeometry args={[0.02, 4, 4]} />
-          <meshBasicMaterial color="white" />
-        </mesh>
-      ))}
+      {/* Stars background */}
+      <Stars radius={50} depth={50} count={1000} factor={4} saturation={0} />
 
-      {/* Orbital paths and satellites */}
+      {/* Satellites and orbital paths */}
       {Object.entries(satellites).map(([satId, satellite], index) => {
         const isSelected = satId === selectedSatellite
-        const radius = 3.2 + (index * 0.3)
-        const inclination = (index * 15) * (Math.PI / 180)
-        const speed = 0.5 + (index * 0.1)
+        const baseRadius = 2.8
+        const radius = baseRadius + (index * 0.4)
+        const inclination = (index * 20 - 30) * (Math.PI / 180) // Different orbital inclinations
+        const speed = 0.3 + (index * 0.1)
         
-        // Orbital position
-        const angle = time * speed + (index * Math.PI / 2)
-        const position: [number, number, number] = [
-          Math.cos(angle) * radius,
-          Math.sin(angle) * radius * Math.sin(inclination),
-          Math.sin(angle) * radius * Math.cos(inclination)
-        ]
+        // Calculate satellite position
+        const angle = time * speed + (index * Math.PI * 0.5)
+        const x = Math.cos(angle) * radius
+        const y = Math.sin(angle) * radius * Math.sin(inclination)  
+        const z = Math.sin(angle) * radius * Math.cos(inclination)
 
         return (
           <group key={satId}>
@@ -254,11 +371,12 @@ function Scene({ selectedSatellite, viewMode }: { selectedSatellite: string; vie
               radius={radius}
               isSelected={isSelected}
               inclination={inclination}
+              satelliteId={satId}
             />
             
             {/* Satellite */}
-            <SatelliteModel
-              position={position}
+            <RealisticSatellite
+              position={[x, y, z]}
               isSelected={isSelected}
               satellite={satellite}
               label={satId}
@@ -272,9 +390,11 @@ function Scene({ selectedSatellite, viewMode }: { selectedSatellite: string; vie
         enablePan={true}
         enableZoom={true}
         enableRotate={true}
-        minDistance={6}
-        maxDistance={20}
+        minDistance={4}
+        maxDistance={15}
         autoRotate={false}
+        rotateSpeed={0.5}
+        zoomSpeed={0.8}
       />
     </>
   )
@@ -287,125 +407,117 @@ export function SatelliteTrackingDashboard() {
   const satellite = satellites[selectedSatellite]
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="h-screen flex">
-        {/* Main Display */}
-        <div className="flex-1 flex flex-col">
-          {/* Professional header */}
-          <div className="h-16 bg-gradient-to-r from-gray-900 to-gray-800 border-b border-purple-500/30 flex items-center px-6">
-            <div className="flex items-center gap-4">
-              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-              <h1 className="text-xl font-mono tracking-wider text-purple-300">
-                AIRSIGHT MISSION CONTROL
-              </h1>
-            </div>
-            <div className="ml-auto flex items-center gap-6">
-              <div className="text-sm font-mono text-green-400">
-                SYSTEM NOMINAL
-              </div>
-              <div className="text-sm font-mono text-gray-400">
-                {new Date().toISOString().slice(0, 19)}Z
-              </div>
-            </div>
+    <div className="h-screen bg-black text-white flex">
+      {/* Main 3D View */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="h-14 bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 border-b border-purple-500/30 flex items-center px-6">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <h1 className="text-lg font-mono tracking-wider text-purple-300 font-bold">
+              AIRSIGHT ORBITAL TRACKING SYSTEM
+            </h1>
           </div>
-
-          {/* Main 3D View */}
-          <div className="flex-1 relative bg-black">
-            <Canvas
-              camera={{ position: [8, 5, 8], fov: 60 }}
-              style={{ background: "radial-gradient(circle, #0a0a0a 0%, #000000 100%)" }}
-              shadows
-            >
-              <Scene selectedSatellite={selectedSatellite} viewMode={viewMode} />
-            </Canvas>
-
-            {/* Professional overlays */}
-            {satellite && (
-              <div className="absolute top-6 left-6 bg-black/90 border border-purple-500/50 backdrop-blur-sm rounded-lg p-4 font-mono">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className={`w-2 h-2 rounded-full ${
-                    satellite.status === "active" ? "bg-green-400 animate-pulse" : "bg-red-400"
-                  }`}></div>
-                  <div className="text-purple-300 font-bold">TARGET: {satellite.id}</div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
-                  <div>
-                    <span className="text-gray-400">LAT:</span>
-                    <span className="text-green-300 ml-2">{satellite.coordinates.latitude.toFixed(4)}°</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">LNG:</span>
-                    <span className="text-green-300 ml-2">{satellite.coordinates.longitude.toFixed(4)}°</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">ALT:</span>
-                    <span className="text-blue-300 ml-2">{satellite.coordinates.altitude} km</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">VEL:</span>
-                    <span className="text-yellow-300 ml-2">{satellite.orbital.velocity} km/s</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">AZ:</span>
-                    <span className="text-purple-300 ml-2">{satellite.orbital.azimuth}°</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">EL:</span>
-                    <span className="text-purple-300 ml-2">{satellite.orbital.elevation}°</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 3D Controls Info */}
-            <div className="absolute top-6 right-6 bg-black/90 border border-purple-500/50 backdrop-blur-sm rounded-lg p-4 font-mono text-xs">
-              <div className="text-purple-300 font-bold mb-2">3D CONTROLS</div>
-              <div className="space-y-1 text-gray-300">
-                <div>• LEFT CLICK + DRAG: Rotate</div>
-                <div>• RIGHT CLICK + DRAG: Pan</div>
-                <div>• SCROLL: Zoom In/Out</div>
-                <div>• MOUSE WHEEL: Distance</div>
-              </div>
+          <div className="ml-auto flex items-center gap-4">
+            <div className="text-xs font-mono text-green-400 bg-green-400/10 px-2 py-1 rounded">
+              NOMINAL
             </div>
-
-            {/* Status bar */}
-            <div className="absolute bottom-6 left-6 right-6">
-              <div className="bg-black/90 border border-purple-500/50 backdrop-blur-sm rounded-lg p-3 font-mono text-xs flex items-center justify-between">
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    <span className="text-green-300">TRACKING ACTIVE</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                    <span className="text-blue-300">3D RENDER</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                    <span className="text-purple-300">REAL-TIME DATA</span>
-                  </div>
-                </div>
-                
-                <div className="text-gray-400">
-                  Tracking {Object.keys(satellites).length} satellites
-                </div>
-              </div>
+            <div className="text-xs font-mono text-gray-300">
+              {new Date().toISOString().slice(0, 19)}Z
             </div>
           </div>
         </div>
 
-        {/* Professional side panel */}
-        <div className="w-96 bg-gradient-to-b from-gray-900 to-gray-800 border-l border-purple-500/30 flex flex-col">
-          <SatelliteControlPanel 
-            selectedSatellite={selectedSatellite}
-            onSatelliteChange={setSelectedSatellite}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-          />
-          <div className="flex-1 overflow-y-auto">
-            <TechnicalReadouts satellite={selectedSatellite} />
+        {/* 3D Canvas */}
+        <div className="flex-1 relative">
+          <Canvas
+            camera={{ position: [6, 3, 6], fov: 50 }}
+            style={{ background: "radial-gradient(ellipse at center, #0f0820 0%, #000000 70%)" }}
+            shadows
+            gl={{ antialias: true, alpha: false }}
+          >
+            <Scene selectedSatellite={selectedSatellite} />
+          </Canvas>
+
+          {/* Professional overlays */}
+          {satellite && (
+            <div className="absolute top-4 left-4 bg-black/90 backdrop-blur border border-purple-500/50 rounded-lg p-4 font-mono text-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className={`w-3 h-3 rounded-full ${
+                  satellite.status === "active" ? "bg-green-400 animate-pulse" : "bg-red-400"
+                }`}></div>
+                <div className="text-purple-300 font-bold tracking-wider">
+                  {satellite.name} ({satellite.id})
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                <div>
+                  <span className="text-gray-400">LATITUDE:</span>
+                  <div className="text-green-300 font-mono">{satellite.coordinates.latitude.toFixed(6)}°</div>
+                </div>
+                <div>
+                  <span className="text-gray-400">LONGITUDE:</span>
+                  <div className="text-green-300 font-mono">{satellite.coordinates.longitude.toFixed(6)}°</div>
+                </div>
+                <div>
+                  <span className="text-gray-400">ALTITUDE:</span>
+                  <div className="text-blue-300 font-mono">{satellite.coordinates.altitude} km</div>
+                </div>
+                <div>
+                  <span className="text-gray-400">VELOCITY:</span>
+                  <div className="text-yellow-300 font-mono">{satellite.orbital.velocity} km/s</div>
+                </div>
+              </div>
+              
+              <div className="mt-3 pt-2 border-t border-purple-500/30 text-xs">
+                <div className="text-gray-400">ORGANIZATION:</div>
+                <div className="text-white">{satellite.organization}</div>
+              </div>
+            </div>
+          )}
+
+          {/* Controls info */}
+          <div className="absolute top-4 right-4 bg-black/90 backdrop-blur border border-purple-500/50 rounded-lg p-3 font-mono text-xs">
+            <div className="text-purple-300 font-bold mb-2">NAVIGATION</div>
+            <div className="space-y-1 text-gray-300">
+              <div>• MOUSE DRAG: Rotate View</div>
+              <div>• SCROLL: Zoom In/Out</div>
+              <div>• RIGHT CLICK: Pan Camera</div>
+            </div>
           </div>
+
+          {/* Status bar */}
+          <div className="absolute bottom-4 left-4 right-4">
+            <div className="bg-black/90 backdrop-blur border border-purple-500/50 rounded-lg p-3 font-mono text-xs flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-green-300">TRACKING {Object.keys(satellites).length} SATELLITES</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                  <span className="text-blue-300">REAL-TIME 3D RENDER</span>
+                </div>
+              </div>
+              <div className="text-purple-300">
+                EARTH ROTATION: ACTIVE
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right panel */}
+      <div className="w-80 bg-gradient-to-b from-gray-900 to-black border-l border-purple-500/30 flex flex-col">
+        <SatelliteControlPanel 
+          selectedSatellite={selectedSatellite}
+          onSatelliteChange={setSelectedSatellite}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
+        <div className="flex-1 overflow-y-auto">
+          <TechnicalReadouts satellite={selectedSatellite} />
         </div>
       </div>
     </div>
