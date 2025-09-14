@@ -19,19 +19,6 @@ export function CesiumGlobe({ selectedSatellite, onSatelliteSelect }: CesiumGlob
   const viewerRef = useRef<any>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [loadingTimeout, setLoadingTimeout] = useState(false)
-
-  // Add timeout for loading
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!isLoaded) {
-        setLoadingTimeout(true)
-        setError('Cesium failed to load - using fallback visualization')
-      }
-    }, 10000) // 10 second timeout
-
-    return () => clearTimeout(timeout)
-  }, [isLoaded])
 
   const addSatellites = useCallback((viewer: any) => {
     if (!viewer || !satellites) return
@@ -54,8 +41,7 @@ export function CesiumGlobe({ selectedSatellite, onSatelliteSelect }: CesiumGlob
                  satellite.status === "maintenance" ? window.Cesium.Color.YELLOW : 
                  window.Cesium.Color.RED,
           outlineColor: isSelected ? window.Cesium.Color.PURPLE : window.Cesium.Color.WHITE,
-          outlineWidth: isSelected ? 3 : 2,
-          heightReference: window.Cesium.HeightReference.NONE
+          outlineWidth: isSelected ? 3 : 2
         },
         label: {
           text: `${satId}\n${satellite.coordinates.altitude}km`,
@@ -64,9 +50,7 @@ export function CesiumGlobe({ selectedSatellite, onSatelliteSelect }: CesiumGlob
           outlineColor: window.Cesium.Color.BLACK,
           outlineWidth: 2,
           pixelOffset: new window.Cesium.Cartesian2(0, -40),
-          scale: isSelected ? 1.2 : 1.0,
-          horizontalOrigin: window.Cesium.HorizontalOrigin.CENTER,
-          verticalOrigin: window.Cesium.VerticalOrigin.BOTTOM
+          scale: isSelected ? 1.2 : 1.0
         }
       })
 
@@ -85,8 +69,7 @@ export function CesiumGlobe({ selectedSatellite, onSatelliteSelect }: CesiumGlob
           polyline: {
             positions: positions,
             width: 3,
-            material: window.Cesium.Color.PURPLE.withAlpha(0.8),
-            clampToGround: false
+            material: window.Cesium.Color.PURPLE.withAlpha(0.8)
           }
         })
       }
@@ -94,34 +77,47 @@ export function CesiumGlobe({ selectedSatellite, onSatelliteSelect }: CesiumGlob
   }, [selectedSatellite])
 
   const initializeCesium = useCallback(() => {
-    if (!cesiumContainerRef.current || !window.Cesium) return
+    if (!cesiumContainerRef.current || !window.Cesium) {
+      console.error('Cesium container or Cesium library not available')
+      return
+    }
 
     try {
-      // Updated Ion token (more recent)
-      window.Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlYWE1OWUxNy1mMWZiLTQzYjYtYTQ0OS1kMWFjYmFkNjc5YzciLCJpZCI6NTc3MzMsImlhdCI6MTYyNzg0NTE4Mn0.XcKpgANiY19MC4bdFUXMVEBToBmqS8kuYpUlxJHYZxk'
+      console.log('Initializing Cesium viewer...')
+      
+      // Use default Cesium imagery without Ion token
+      window.Cesium.Ion.defaultAccessToken = undefined
 
       const viewer = new window.Cesium.Viewer(cesiumContainerRef.current, {
-        timeline: false,
-        animation: false,
+        // Use OpenStreetMap instead of Cesium Ion imagery
+        imageryProvider: new window.Cesium.OpenStreetMapImageryProvider({
+          url: 'https://a.tile.openstreetmap.org/'
+        }),
+        baseLayerPicker: false,
+        geocoder: false,
         homeButton: false,
         sceneModePicker: false,
         navigationHelpButton: false,
-        baseLayerPicker: false,
-        geocoder: false,
+        animation: false,
+        timeline: false,
         fullscreenButton: false,
         vrButton: false,
         selectionIndicator: false,
         infoBox: false,
-        creditContainer: 'cesium-credit-container',
-        terrainProvider: window.Cesium.createWorldTerrain ? window.Cesium.createWorldTerrain() : undefined
+        creditContainer: 'cesium-credit-container'
       })
+
+      // Remove default terrain to avoid Ion dependency
+      viewer.terrainProvider = new window.Cesium.EllipsoidTerrainProvider()
 
       viewerRef.current = viewer
 
+      // Set camera to India
       viewer.camera.setView({
-        destination: window.Cesium.Cartesian3.fromDegrees(77.1025, 28.7041, 15000000)
+        destination: window.Cesium.Cartesian3.fromDegrees(77.1025, 28.7041, 10000000)
       })
 
+      // Handle satellite selection
       viewer.selectedEntityChanged.addEventListener(() => {
         const selected = viewer.selectedEntity
         if (selected && selected.id && satellites[selected.id]) {
@@ -131,46 +127,53 @@ export function CesiumGlobe({ selectedSatellite, onSatelliteSelect }: CesiumGlob
 
       addSatellites(viewer)
       setIsLoaded(true)
-      console.log('Cesium initialized successfully')
+      console.log('Cesium initialized successfully!')
+
     } catch (err) {
-      console.error('Cesium initialization error:', err)
-      setError('Failed to initialize Cesium viewer')
+      console.error('Cesium initialization failed:', err)
+      setError(`Cesium initialization failed: ${err}`)
     }
   }, [addSatellites, onSatelliteSelect])
 
   useEffect(() => {
     const loadCesium = async () => {
       try {
+        // Check if already loaded
         if (window.Cesium) {
-          initializeCesium()
+          console.log('Cesium already loaded')
+          setTimeout(initializeCesium, 100)
           return
         }
 
         console.log('Loading Cesium from CDN...')
 
-        // Load CSS first
+        // Load CSS
         const cssLink = document.createElement('link')
         cssLink.rel = 'stylesheet'
-        cssLink.href = 'https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css'
-        cssLink.onload = () => console.log('Cesium CSS loaded')
-        cssLink.onerror = () => console.error('Failed to load Cesium CSS')
+        cssLink.href = 'https://cesium.com/downloads/cesiumjs/releases/1.110/Build/Cesium/Widgets/widgets.css'
         document.head.appendChild(cssLink)
 
-        // Load JS
-        const script = document.createElement('script')
-        script.src = 'https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js'
-        script.onload = () => {
-          console.log('Cesium JS loaded successfully')
-          setTimeout(initializeCesium, 100) // Small delay to ensure Cesium is ready
-        }
-        script.onerror = (e) => {
-          console.error('Failed to load Cesium JS:', e)
-          setError('Failed to load Cesium from CDN')
-        }
-        document.head.appendChild(script)
+        // Load JS with promise
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://cesium.com/downloads/cesiumjs/releases/1.110/Build/Cesium/Cesium.js'
+          script.onload = () => {
+            console.log('Cesium script loaded')
+            resolve()
+          }
+          script.onerror = (e) => {
+            console.error('Failed to load Cesium script:', e)
+            reject(new Error('Failed to load Cesium'))
+          }
+          document.head.appendChild(script)
+        })
+
+        // Wait a bit for Cesium to initialize
+        setTimeout(initializeCesium, 500)
+
       } catch (err) {
         console.error('Error loading Cesium:', err)
-        setError('Error initializing Cesium')
+        setError(`Failed to load Cesium: ${err}`)
       }
     }
 
@@ -178,7 +181,11 @@ export function CesiumGlobe({ selectedSatellite, onSatelliteSelect }: CesiumGlob
 
     return () => {
       if (viewerRef.current && !viewerRef.current.isDestroyed()) {
-        viewerRef.current.destroy()
+        try {
+          viewerRef.current.destroy()
+        } catch (e) {
+          console.warn('Error destroying Cesium viewer:', e)
+        }
       }
     }
   }, [initializeCesium])
@@ -189,64 +196,18 @@ export function CesiumGlobe({ selectedSatellite, onSatelliteSelect }: CesiumGlob
     }
   }, [selectedSatellite, isLoaded, addSatellites])
 
-  // Fallback SVG visualization if Cesium fails
-  if (error || loadingTimeout) {
+  if (error) {
     return (
-      <div className="w-full h-full relative bg-gradient-to-br from-gray-900 via-black to-purple-900">
-        {/* Fallback SVG Globe */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <svg viewBox="0 0 800 800" className="w-full h-full max-w-md max-h-md">
-            <defs>
-              <radialGradient id="earthGrad" cx="0.3" cy="0.3">
-                <stop offset="0%" stopColor="#4ade80" />
-                <stop offset="70%" stopColor="#1e40af" />
-                <stop offset="100%" stopColor="#0c1844" />
-              </radialGradient>
-            </defs>
-            
-            {/* Earth */}
-            <circle cx="400" cy="400" r="200" fill="url(#earthGrad)" stroke="#60a5fa" strokeWidth="2">
-              <animateTransform attributeName="transform" type="rotate" values="0 400 400;360 400 400" dur="20s" repeatCount="indefinite"/>
-            </circle>
-            
-            {/* Continents */}
-            <g fill="#15803d" opacity="0.8">
-              <ellipse cx="350" cy="350" rx="40" ry="25" transform="rotate(-20 350 350)"/>
-              <ellipse cx="450" cy="380" rx="50" ry="30" transform="rotate(10 450 380)"/>
-              <ellipse cx="380" cy="450" rx="30" ry="40" transform="rotate(30 380 450)"/>
-            </g>
-            
-            {/* Orbital paths and satellites */}
-            {Object.entries(satellites).map(([satId, satellite], index) => {
-              const isSelected = satId === selectedSatellite
-              const radius = 250 + (index * 40)
-              const angle = (Date.now() * 0.001 + index * Math.PI / 2) % (2 * Math.PI)
-              const x = 400 + radius * Math.cos(angle)
-              const y = 400 + radius * Math.sin(angle)
-              
-              return (
-                <g key={satId}>
-                  <circle cx="400" cy="400" r={radius} fill="none" 
-                         stroke={isSelected ? "#a855f7" : "#4c1d95"} 
-                         strokeWidth={isSelected ? 3 : 1} 
-                         opacity={isSelected ? 0.8 : 0.4} />
-                  <circle cx={x} cy={y} r={isSelected ? 8 : 5}
-                         fill={satellite.status === "active" ? "#10b981" : "#ef4444"}
-                         stroke={isSelected ? "#a855f7" : "white"} strokeWidth="2">
-                    {isSelected && <animate attributeName="r" values="8;12;8" dur="2s" repeatCount="indefinite" />}
-                  </circle>
-                  <text x={x + 15} y={y - 10} fill="white" fontSize="12" fontFamily="monospace">
-                    {satId}
-                  </text>
-                </g>
-              )
-            })}
-          </svg>
-        </div>
-        
-        <div className="absolute bottom-4 left-4 bg-red-900/80 border border-red-500 rounded p-3 text-white font-mono text-sm">
-          <div className="text-red-300 mb-1">⚠ Cesium Fallback Mode</div>
-          <div className="text-xs">Using SVG visualization - Cesium CDN unavailable</div>
+      <div className="w-full h-full flex items-center justify-center bg-black text-white">
+        <div className="text-center font-mono max-w-md">
+          <div className="text-red-400 text-xl mb-4">⚠ Cesium Load Error</div>
+          <div className="text-gray-400 text-sm mb-4">{error}</div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm"
+          >
+            Refresh Page
+          </button>
         </div>
       </div>
     )
@@ -256,15 +217,9 @@ export function CesiumGlobe({ selectedSatellite, onSatelliteSelect }: CesiumGlob
     return (
       <div className="w-full h-full flex items-center justify-center bg-black text-white">
         <div className="text-center font-mono">
-          <div className="animate-spin w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-6"></div>
-          <div className="text-2xl text-purple-300 mb-3">CESIUM EARTH ENGINE</div>
-          <div className="text-sm text-gray-400 mb-2">Loading Professional 3D Globe...</div>
-          <div className="text-xs text-gray-500">Initializing Terrain & Satellite Data</div>
-          
-          {/* Progress indicator */}
-          <div className="mt-4 w-48 bg-gray-700 rounded-full h-2 mx-auto">
-            <div className="bg-purple-500 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
-          </div>
+          <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <div className="text-xl text-purple-300 mb-2">CESIUM EARTH ENGINE</div>
+          <div className="text-sm text-gray-400">Loading 3D Globe...</div>
         </div>
       </div>
     )
@@ -273,7 +228,7 @@ export function CesiumGlobe({ selectedSatellite, onSatelliteSelect }: CesiumGlob
   return (
     <div className="w-full h-full relative">
       <div ref={cesiumContainerRef} className="w-full h-full" />
-      <div id="cesium-credit-container" className="absolute bottom-0 left-0 text-xs opacity-30 pointer-events-none" />
+      <div id="cesium-credit-container" className="absolute bottom-0 left-0 text-xs opacity-50" />
     </div>
   )
 }
