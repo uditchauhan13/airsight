@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { satellites, orbitalTrajectories } from "@/lib/satellite-data"
 
 interface OrbitalMapProps {
@@ -8,7 +8,6 @@ interface OrbitalMapProps {
 }
 
 export function OrbitalMap({ selectedSatellite }: OrbitalMapProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
   const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
@@ -18,150 +17,202 @@ export function OrbitalMap({ selectedSatellite }: OrbitalMapProps) {
     return () => clearInterval(timer)
   }, [])
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    // Clear canvas
-    ctx.fillStyle = "#000000"
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    // Draw world map outline (simplified)
-    drawWorldMap(ctx, canvas.width, canvas.height)
-
-    // Draw orbital trajectories
-    drawOrbitalTrajectories(ctx, canvas.width, canvas.height)
-
-    // Draw satellites
-    drawSatellites(ctx, canvas.width, canvas.height, selectedSatellite)
-
-    // Draw selected satellite details
-    drawSatelliteDetails(ctx, selectedSatellite)
-
-  }, [selectedSatellite, currentTime])
-
-  const drawWorldMap = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.strokeStyle = "#333333"
-    ctx.lineWidth = 1
-
-    // Simple continent outlines
-    const continents = [
-      // North America
-      [[0.15, 0.2], [0.35, 0.2], [0.35, 0.45], [0.15, 0.45]],
-      // Europe/Asia
-      [[0.4, 0.15], [0.85, 0.15], [0.85, 0.5], [0.4, 0.5]],
-      // Africa
-      [[0.42, 0.35], [0.58, 0.35], [0.58, 0.7], [0.42, 0.7]],
-      // Australia
-      [[0.7, 0.65], [0.85, 0.65], [0.85, 0.75], [0.7, 0.75]]
-    ]
-
-    continents.forEach(continent => {
-      ctx.beginPath()
-      continent.forEach(([x, y], i) => {
-        const pixelX = x * width
-        const pixelY = y * height
-        if (i === 0) ctx.moveTo(pixelX, pixelY)
-        else ctx.lineTo(pixelX, pixelY)
-      })
-      ctx.closePath()
-      ctx.stroke()
-    })
-  }
-
-  const drawOrbitalTrajectories = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    Object.entries(orbitalTrajectories).forEach(([satId, trajectory]) => {
-      const isSelected = satId === selectedSatellite
-      
-      ctx.strokeStyle = isSelected ? "#a855f7" : "#6b21a8"
-      ctx.lineWidth = isSelected ? 3 : 2
-      ctx.setLineDash(isSelected ? [] : [5, 5])
-
-      ctx.beginPath()
-      trajectory.forEach((point, i) => {
-        const x = ((point.lng + 180) / 360) * width
-        const y = ((90 - point.lat) / 180) * height
-        
-        if (i === 0) ctx.moveTo(x, y)
-        else ctx.lineTo(x, y)
-      })
-      ctx.stroke()
-      ctx.setLineDash([])
-    })
-  }
-
-  const drawSatellites = (ctx: CanvasRenderingContext2D, width: number, height: number, selected: string) => {
-    Object.entries(satellites).forEach(([satId, satellite]) => {
-      const x = ((satellite.coordinates.longitude + 180) / 360) * width
-      const y = ((90 - satellite.coordinates.latitude) / 180) * height
-      
-      const isSelected = satId === selected
-      const radius = isSelected ? 8 : 5
-      
-      // Satellite dot
-      ctx.beginPath()
-      ctx.arc(x, y, radius, 0, 2 * Math.PI)
-      ctx.fillStyle = satellite.status === "active" ? "#10b981" : 
-                      satellite.status === "maintenance" ? "#f59e0b" : "#ef4444"
-      ctx.fill()
-      
-      if (isSelected) {
-        ctx.strokeStyle = "#a855f7"
-        ctx.lineWidth = 2
-        ctx.stroke()
-      }
-      
-      // Satellite label
-      ctx.fillStyle = "#ffffff"
-      ctx.font = isSelected ? "bold 12px sans-serif" : "10px sans-serif"
-      ctx.fillText(satellite.id, x + 12, y - 8)
-    })
-  }
-
-  const drawSatelliteDetails = (ctx: CanvasRenderingContext2D, selected: string) => {
-    const satellite = satellites[selected]
-    if (!satellite) return
-
-    // Details panel
-    const panelX = 20
-    const panelY = 20
-    const panelWidth = 300
-    const panelHeight = 120
-
-    ctx.fillStyle = "rgba(0, 0, 0, 0.8)"
-    ctx.fillRect(panelX, panelY, panelWidth, panelHeight)
-    ctx.strokeStyle = "#a855f7"
-    ctx.lineWidth = 1
-    ctx.strokeRect(panelX, panelY, panelWidth, panelHeight)
-
-    ctx.fillStyle = "#ffffff"
-    ctx.font = "bold 14px sans-serif"
-    ctx.fillText(`${satellite.name} (${satellite.id})`, panelX + 10, panelY + 25)
-    
-    ctx.font = "12px sans-serif"
-    ctx.fillStyle = "#a855f7"
-    ctx.fillText(`Lat: ${satellite.coordinates.latitude.toFixed(4)}°`, panelX + 10, panelY + 45)
-    ctx.fillText(`Lng: ${satellite.coordinates.longitude.toFixed(4)}°`, panelX + 10, panelY + 60)
-    ctx.fillText(`Alt: ${satellite.coordinates.altitude} km`, panelX + 10, panelY + 75)
-    ctx.fillText(`Status: ${satellite.status.toUpperCase()}`, panelX + 10, panelY + 95)
-    ctx.fillText(`Vel: ${satellite.orbital.velocity} km/s`, panelX + 150, panelY + 45)
-  }
+  const satellite = satellites[selectedSatellite]
+  if (!satellite) return null
 
   return (
-    <div className="relative w-full h-full bg-black">
-      <canvas
-        ref={canvasRef}
-        width={800}
-        height={500}
-        className="w-full h-full object-contain"
-      />
-      
-      <div className="absolute top-4 right-4 bg-black/80 border border-purple-500/50 rounded p-2">
-        <div className="text-purple-400 text-sm font-mono">
-          {currentTime.toISOString().slice(0, 19)}Z
+    <div className="relative w-full h-full bg-gradient-to-br from-gray-900 via-black to-purple-900 overflow-hidden">
+      {/* World Map Background */}
+      <div className="absolute inset-0 opacity-30">
+        <svg viewBox="0 0 800 400" className="w-full h-full">
+          {/* Continents - Simple outlines */}
+          <g stroke="#333333" fill="none" strokeWidth="1">
+            {/* North America */}
+            <path d="M 120 80 L 280 80 L 280 180 L 120 180 Z" />
+            {/* Europe/Asia */}
+            <path d="M 320 60 L 680 60 L 680 200 L 320 200 Z" />
+            {/* Africa */}
+            <path d="M 336 140 L 464 140 L 464 280 L 336 280 Z" />
+            {/* Australia */}
+            <path d="M 560 260 L 680 260 L 680 300 L 560 300 Z" />
+            {/* Grid lines */}
+            <g stroke="#222" strokeWidth="0.5" opacity="0.5">
+              {Array.from({length: 9}, (_, i) => (
+                <line key={`h${i}`} x1="0" y1={i * 50} x2="800" y2={i * 50} />
+              ))}
+              {Array.from({length: 17}, (_, i) => (
+                <line key={`v${i}`} x1={i * 50} y1="0" x2={i * 50} y2="400" />
+              ))}
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      {/* Orbital Trajectories */}
+      <div className="absolute inset-0">
+        <svg viewBox="0 0 800 400" className="w-full h-full">
+          {Object.entries(orbitalTrajectories).map(([satId, trajectory]) => {
+            const isSelected = satId === selectedSatellite
+            
+            return (
+              <g key={satId}>
+                {/* Orbital path */}
+                <path
+                  d={`M ${trajectory.map(point => {
+                    const x = ((point.lng + 180) / 360) * 800
+                    const y = ((90 - point.lat) / 180) * 400
+                    return `${x},${y}`
+                  }).join(' L ')}`}
+                  stroke={isSelected ? "#a855f7" : "#6b21a8"}
+                  strokeWidth={isSelected ? "3" : "2"}
+                  fill="none"
+                  strokeDasharray={isSelected ? "none" : "5,5"}
+                  opacity={isSelected ? "1" : "0.6"}
+                />
+                
+                {/* Trajectory points */}
+                {trajectory.map((point, i) => {
+                  const x = ((point.lng + 180) / 360) * 800
+                  const y = ((90 - point.lat) / 180) * 400
+                  
+                  return (
+                    <circle
+                      key={i}
+                      cx={x}
+                      cy={y}
+                      r={isSelected ? "3" : "2"}
+                      fill={isSelected ? "#a855f7" : "#6b21a8"}
+                      opacity="0.8"
+                    />
+                  )
+                })}
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+
+      {/* Satellites */}
+      <div className="absolute inset-0">
+        <svg viewBox="0 0 800 400" className="w-full h-full">
+          {Object.entries(satellites).map(([satId, sat]) => {
+            const x = ((sat.coordinates.longitude + 180) / 360) * 800
+            const y = ((90 - sat.coordinates.latitude) / 180) * 400
+            const isSelected = satId === selectedSatellite
+            
+            const statusColor = sat.status === "active" ? "#10b981" : 
+                               sat.status === "maintenance" ? "#f59e0b" : "#ef4444"
+            
+            return (
+              <g key={satId}>
+                {/* Satellite ring (if selected) */}
+                {isSelected && (
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r="20"
+                    fill="none"
+                    stroke="#a855f7"
+                    strokeWidth="2"
+                    opacity="0.6"
+                  >
+                    <animate
+                      attributeName="r"
+                      values="15;25;15"
+                      dur="2s"
+                      repeatCount="indefinite"
+                    />
+                  </circle>
+                )}
+                
+                {/* Satellite dot */}
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={isSelected ? "8" : "5"}
+                  fill={statusColor}
+                  stroke={isSelected ? "#a855f7" : "none"}
+                  strokeWidth="2"
+                />
+                
+                {/* Satellite label */}
+                <text
+                  x={x + 12}
+                  y={y - 8}
+                  fill="white"
+                  fontSize={isSelected ? "12" : "10"}
+                  fontWeight={isSelected ? "bold" : "normal"}
+                  fontFamily="monospace"
+                >
+                  {sat.id}
+                </text>
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+
+      {/* Selected Satellite Details Panel */}
+      <div className="absolute top-4 left-4 bg-black/80 border border-purple-500/50 rounded-lg p-4 text-white max-w-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <div className={`w-3 h-3 rounded-full ${
+            satellite.status === "active" ? "bg-green-500" : 
+            satellite.status === "maintenance" ? "bg-yellow-500" : "bg-red-500"
+          }`}></div>
+          <h3 className="text-lg font-bold text-purple-400">
+            {satellite.name} ({satellite.id})
+          </h3>
+        </div>
+        
+        <div className="space-y-2 text-sm">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="text-gray-400">Latitude:</span>
+              <div className="text-purple-300 font-mono">
+                {satellite.coordinates.latitude.toFixed(4)}°
+              </div>
+            </div>
+            <div>
+              <span className="text-gray-400">Longitude:</span>
+              <div className="text-purple-300 font-mono">
+                {satellite.coordinates.longitude.toFixed(4)}°
+              </div>
+            </div>
+            <div>
+              <span className="text-gray-400">Altitude:</span>
+              <div className="text-purple-300 font-mono">
+                {satellite.coordinates.altitude} km
+              </div>
+            </div>
+            <div>
+              <span className="text-gray-400">Velocity:</span>
+              <div className="text-purple-300 font-mono">
+                {satellite.orbital.velocity} km/s
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-3 pt-2 border-t border-purple-500/30">
+            <div className="text-gray-400 text-xs">Organization:</div>
+            <div className="text-white text-xs">{satellite.organization}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Timestamp */}
+      <div className="absolute top-4 right-4 bg-black/80 border border-purple-500/50 rounded px-3 py-1 text-purple-300 font-mono text-sm">
+        {currentTime.toISOString().slice(0, 19)}Z
+      </div>
+
+      {/* Scale indicator */}
+      <div className="absolute bottom-4 left-4 bg-black/80 border border-purple-500/50 rounded px-3 py-2 text-white text-xs">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-4 h-1 bg-purple-500"></div>
+          <span>Orbital Track</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span>Active Satellite</span>
         </div>
       </div>
     </div>
