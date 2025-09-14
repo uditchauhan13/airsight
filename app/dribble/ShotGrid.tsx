@@ -1,6 +1,6 @@
 "use client";
 import useSWR from "swr";
-import { getShots } from "@/lib/dribble"
+import { getShots } from "../../lib/dribble"
 
 import ShotCard from "./ShotCard";
 
