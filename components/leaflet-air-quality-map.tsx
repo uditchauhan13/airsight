@@ -8,6 +8,13 @@ import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar, Download, Share2, Play, Pause, Layers, MapPin, Satellite, Building2, Search, X } from "lucide-react"
 
+// Add global TypeScript declaration for Leaflet
+declare global {
+  interface Window {
+    L: any
+  }
+}
+
 const MapContainer = dynamic(() => import("react-leaflet").then((mod) => ({ default: mod.MapContainer })), {
   ssr: false,
 })
@@ -15,6 +22,9 @@ const TileLayer = dynamic(() => import("react-leaflet").then((mod) => ({ default
 const Marker = dynamic(() => import("react-leaflet").then((mod) => ({ default: mod.Marker })), { ssr: false })
 const Popup = dynamic(() => import("react-leaflet").then((mod) => ({ default: mod.Popup })), { ssr: false })
 const Circle = dynamic(() => import("react-leaflet").then((mod) => ({ default: mod.Circle })), { ssr: false })
+
+// ... rest of your component stays the same
+
 
 interface MonitoringStation {
   id: string
