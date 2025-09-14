@@ -1,6 +1,7 @@
 "use client";
 import useSWR from "swr";
-import { getShots } from "@/lib/dribbble";
+import { getShots } from "@/lib/dribble"
+
 import ShotCard from "./ShotCard";
 
 export default function ShotGrid() {
