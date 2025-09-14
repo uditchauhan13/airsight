@@ -6,19 +6,22 @@ import { satellites } from "@/lib/satellite-data"
 import { SatelliteControlPanel } from "./satellite-tracking/satellite-control-panel"
 import { TechnicalReadouts } from "./satellite-tracking/technical-readouts"
 
-// Dynamically import Cesium to avoid SSR issues
-const CesiumGlobe = dynamic(() => import('./cesium-globe'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-black">
-      <div className="text-white font-mono text-center">
-        <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <div className="text-xl text-purple-300 mb-2">CESIUM EARTH ENGINE</div>
-        <div className="text-sm text-gray-400">Loading Professional 3D Globe...</div>
+// Fixed dynamic import to properly extract the named export
+const CesiumGlobe = dynamic(
+  () => import('./cesium-globe').then(mod => ({ default: mod.CesiumGlobe })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center bg-black">
+        <div className="text-white font-mono text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <div className="text-xl text-purple-300 mb-2">CESIUM EARTH ENGINE</div>
+          <div className="text-sm text-gray-400">Loading Professional 3D Globe...</div>
+        </div>
       </div>
-    </div>
-  )
-})
+    )
+  }
+)
 
 export function SatelliteTrackingDashboard() {
   const [selectedSatellite, setSelectedSatellite] = useState("VO-52")
@@ -70,7 +73,8 @@ export function SatelliteTrackingDashboard() {
 
         {/* Cesium Globe Container */}
         <div className="flex-1 relative">
-          <CesiumGlobe.CesiumGlobe 
+          {/* Fixed: Now using CesiumGlobe directly instead of CesiumGlobe.CesiumGlobe */}
+          <CesiumGlobe 
             selectedSatellite={selectedSatellite}
             onSatelliteSelect={setSelectedSatellite}
           />
