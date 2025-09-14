@@ -11,7 +11,6 @@ export function SatelliteTrackingDashboard() {
   const [viewMode, setViewMode] = useState<"map" | "3d">("map")
   const [time, setTime] = useState(0)
 
-  // Animation timer
   useEffect(() => {
     const interval = setInterval(() => {
       setTime(prev => prev + 1)
@@ -24,9 +23,7 @@ export function SatelliteTrackingDashboard() {
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="h-screen flex">
-        {/* Main Display */}
         <div className="flex-1 flex flex-col">
-          {/* Header */}
           <div className="h-16 bg-gray-900 border-b border-gray-700 flex items-center px-6">
             <h1 className="text-xl font-mono text-purple-400">AIRSIGHT MISSION CONTROL</h1>
             <div className="ml-auto text-sm font-mono text-gray-400">
@@ -34,10 +31,8 @@ export function SatelliteTrackingDashboard() {
             </div>
           </div>
 
-          {/* Main View */}
           <div className="flex-1 relative bg-black overflow-hidden">
             {viewMode === "map" ? (
-              /* Map View - SVG Based */
               <div className="w-full h-full relative">
                 <svg viewBox="0 0 1200 600" className="w-full h-full">
                   <defs>
@@ -51,32 +46,22 @@ export function SatelliteTrackingDashboard() {
                     </radialGradient>
                   </defs>
                   
-                  {/* Background grid */}
                   <rect width="100%" height="100%" fill="url(#grid)" />
                   
-                  {/* Continents */}
                   <g fill="#111111" stroke="#333333" strokeWidth="1">
-                    {/* North America */}
                     <path d="M 140 90 L 380 90 L 420 270 L 100 290 Z" />
-                    {/* Europe */}
                     <path d="M 540 70 L 700 70 L 720 210 L 500 230 Z" />
-                    {/* Asia */}
                     <path d="M 700 50 L 1020 50 L 1050 270 L 720 290 Z" />
-                    {/* Africa */}
                     <path d="M 550 210 L 740 210 L 700 450 L 600 470 Z" />
-                    {/* South America */}
                     <path d="M 300 270 L 460 270 L 420 510 L 340 530 Z" />
-                    {/* Australia */}
                     <path d="M 860 390 L 1020 390 L 1050 470 L 900 480 Z" />
                   </g>
                   
-                  {/* Central Earth Globe */}
                   <g transform="translate(600, 300)">
                     <circle r="80" fill="url(#earthGrad)" stroke="#4ade80" strokeWidth="2" opacity="0.9">
                       <animateTransform attributeName="transform" type="rotate" values="0;360" dur="20s" repeatCount="indefinite"/>
                     </circle>
                     
-                    {/* Continents on globe */}
                     <g fill="#15803d" opacity="0.7">
                       <ellipse cx="-20" cy="-30" rx="25" ry="15" transform="rotate(-20)"/>
                       <ellipse cx="30" cy="-10" rx="30" ry="20" transform="rotate(10)"/>
@@ -84,13 +69,11 @@ export function SatelliteTrackingDashboard() {
                       <ellipse cx="25" cy="35" rx="15" ry="10" transform="rotate(-15)"/>
                     </g>
                     
-                    {/* Atmospheric glow */}
                     <circle r="85" fill="none" stroke="#60a5fa" strokeWidth="1" opacity="0.6">
                       <animate attributeName="opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite"/>
                     </circle>
                   </g>
                   
-                  {/* Orbital Paths */}
                   {Object.entries(satellites).map(([satId, sat], index) => {
                     const isSelected = satId === selectedSatellite
                     const centerX = 600
@@ -99,14 +82,10 @@ export function SatelliteTrackingDashboard() {
                     const radiusY = 100 + (index * 25)
                     const rotation = index * 30
                     
-                    // Satellite position
                     const angle = (time * 2 + index * 90) * Math.PI / 180
-                    const satX = centerX + radiusX * Math.cos(angle) * Math.cos(rotation * Math.PI / 180)
-                    const satY = centerY + radiusY * Math.sin(angle)
                     
                     return (
                       <g key={satId}>
-                        {/* Orbital ellipse */}
                         <ellipse
                           cx={centerX}
                           cy={centerY}
@@ -120,7 +99,6 @@ export function SatelliteTrackingDashboard() {
                           transform={`rotate(${rotation} ${centerX} ${centerY})`}
                         />
                         
-                        {/* Satellite */}
                         <g transform={`rotate(${rotation} ${centerX} ${centerY})`}>
                           <circle
                             cx={centerX + radiusX * Math.cos(angle)}
@@ -135,7 +113,6 @@ export function SatelliteTrackingDashboard() {
                             )}
                           </circle>
                           
-                          {/* Satellite label */}
                           <text
                             x={centerX + radiusX * Math.cos(angle) + 10}
                             y={centerY + radiusY * Math.sin(angle) - 8}
@@ -153,18 +130,9 @@ export function SatelliteTrackingDashboard() {
                 </svg>
               </div>
             ) : (
-              /* 3D View - CSS Based */
               <div className="w-full h-full relative bg-gradient-to-b from-black via-purple-950 to-black flex items-center justify-center">
-                {/* 3D Earth */}
                 <div className="relative">
-                  <div 
-                    className="w-48 h-48 rounded-full bg-gradient-to-br from-blue-500 via-green-500 to-blue-800 relative overflow-hidden shadow-2xl border-4 border-blue-400/30"
-                    style={{
-                      boxShadow: "0 0 60px rgba(59, 130, 246, 0.5), inset 0 0 60px rgba(0, 0, 0, 0.3)",
-                      animation: "rotate 30s linear infinite"
-                    }}
-                  >
-                    {/* Continents */}
+                  <div className="w-48 h-48 rounded-full bg-gradient-to-br from-blue-500 via-green-500 to-blue-800 relative overflow-hidden shadow-2xl border-4 border-blue-400/30 animate-spin" style={{animationDuration: '30s'}}>
                     <div className="absolute inset-0">
                       <div className="absolute top-8 left-8 w-12 h-8 bg-green-700 rounded-full opacity-80"></div>
                       <div className="absolute top-6 right-6 w-16 h-10 bg-green-600 rounded-lg opacity-80"></div>
@@ -172,33 +140,29 @@ export function SatelliteTrackingDashboard() {
                       <div className="absolute bottom-8 right-10 w-6 h-4 bg-green-600 rounded-full opacity-80"></div>
                     </div>
                     
-                    {/* Atmosphere */}
                     <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-blue-200/20 to-transparent"></div>
                   </div>
                   
-                  {/* Orbital Rings */}
                   {Object.entries(satellites).map(([satId, sat], index) => {
                     const isSelected = satId === selectedSatellite
                     const radius = 120 + (index * 30)
                     const angle = (time * 3 + index * 90) * Math.PI / 180
                     const satX = radius * Math.cos(angle)
-                    const satY = radius * Math.sin(angle) * 0.3 // Perspective effect
+                    const satY = radius * Math.sin(angle) * 0.3
                     
                     return (
                       <div key={satId}>
-                        {/* Ring */}
                         <div 
                           className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full border-2 ${
                             isSelected ? 'border-purple-500' : 'border-gray-600'
                           }`}
                           style={{
                             width: `${radius * 2}px`,
-                            height: `${radius * 0.6}px`, // Elliptical perspective
+                            height: `${radius * 0.6}px`,
                             opacity: isSelected ? 0.8 : 0.4
                           }}
                         ></div>
                         
-                        {/* Satellite */}
                         <div
                           className={`absolute w-3 h-3 rounded-full ${
                             sat.status === "active" ? "bg-green-400" : "bg-red-400"
@@ -210,7 +174,6 @@ export function SatelliteTrackingDashboard() {
                             boxShadow: isSelected ? "0 0 12px rgba(168, 85, 247, 0.8)" : "none"
                           }}
                         >
-                          {/* Label */}
                           <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-mono whitespace-nowrap">
                             {satId}
                           </div>
@@ -220,7 +183,6 @@ export function SatelliteTrackingDashboard() {
                   })}
                 </div>
                 
-                {/* 3D Info */}
                 <div className="absolute top-4 left-4 bg-black/90 border border-gray-600 p-3 text-white font-mono text-xs">
                   <div className="text-purple-400 mb-2">3D ORBITAL VIEW</div>
                   <div>• Perspective projection</div>
@@ -230,7 +192,6 @@ export function SatelliteTrackingDashboard() {
               </div>
             )}
 
-            {/* Target Info Overlay */}
             {satellite && (
               <div className="absolute top-4 left-4 bg-black/90 border border-gray-600 p-3 font-mono text-sm">
                 <div className="text-purple-400 mb-2">TARGET: {satellite.id}</div>
@@ -243,4 +204,47 @@ export function SatelliteTrackingDashboard() {
                   <div>EL: {satellite.orbital.elevation}°</div>
                 </div>
                 <div className="mt-2 pt-2 border-t border-gray-600">
-                  <div className="text
+                  <div className="text-gray-400">STATUS:</div>
+                  <div className={`${satellite.status === "active" ? "text-green-400" : "text-red-400"}`}>
+                    {satellite.status.toUpperCase()}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="absolute bottom-4 right-4 flex gap-2">
+              <Button
+                size="sm"
+                variant={viewMode === "map" ? "default" : "outline"}
+                onClick={() => setViewMode("map")}
+                className="font-mono text-xs bg-purple-600 hover:bg-purple-700"
+              >
+                MAP
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === "3d" ? "default" : "outline"}
+                onClick={() => setViewMode("3d")}
+                className="font-mono text-xs bg-purple-600 hover:bg-purple-700"
+              >
+                3D
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="w-80 bg-gray-900 border-l border-gray-700 flex flex-col">
+          <SatelliteControlPanel 
+            selectedSatellite={selectedSatellite}
+            onSatelliteChange={setSelectedSatellite}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+          />
+          <div className="flex-1 overflow-y-auto">
+            <TechnicalReadouts satellite={selectedSatellite} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
