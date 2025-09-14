@@ -22,48 +22,105 @@ export function SatelliteTrackingDashboard() {
         <div className="grid grid-cols-12 gap-4 h-[calc(100vh-200px)]">
           {/* Main Orbital View */}
           <div className="col-span-8 bg-gray-900/50 border border-purple-500/30 rounded-lg overflow-hidden relative">
-            {/* Simplified Orbital Map */}
+            {/* Enhanced Orbital Map with Globe */}
             <div className="w-full h-full relative bg-gradient-to-br from-gray-900 via-black to-purple-900">
               
-              {/* World Map Background */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <svg viewBox="0 0 1000 500" className="w-full h-full opacity-30">
-                  <defs>
-                    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
-                      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#333" strokeWidth="1"/>
-                    </pattern>
-                  </defs>
-                  
-                  {/* Grid */}
-                  <rect width="100%" height="100%" fill="url(#grid)" />
-                  
-                  {/* Continents */}
-                  <g stroke="#444" fill="#1a1a1a" strokeWidth="2">
-                    {/* North America */}
-                    <rect x="100" y="100" width="200" height="150" rx="20"/>
-                    {/* Europe/Asia */}
-                    <rect x="400" y="80" width="350" height="200" rx="20"/>
-                    {/* Africa */}
-                    <rect x="420" y="200" width="120" height="180" rx="15"/>
-                    {/* Australia */}
-                    <rect x="700" y="320" width="100" height="60" rx="10"/>
-                  </g>
+              {/* Stars Background */}
+              <div className="absolute inset-0">
+                <svg viewBox="0 0 1000 500" className="w-full h-full">
+                  {/* Random stars */}
+                  {Array.from({length: 100}, (_, i) => (
+                    <circle
+                      key={i}
+                      cx={Math.random() * 1000}
+                      cy={Math.random() * 500}
+                      r={Math.random() * 1.5}
+                      fill="white"
+                      opacity={Math.random() * 0.8 + 0.2}
+                    />
+                  ))}
                 </svg>
               </div>
 
-              {/* Orbital Trajectories */}
+              {/* Central Earth Globe */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative">
+                  {/* Main Earth sphere */}
+                  <div className="w-48 h-48 rounded-full relative overflow-hidden border-4 border-blue-400/30">
+                    {/* Earth gradient background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-green-600 to-blue-800"></div>
+                    
+                    {/* Continents overlay */}
+                    <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full opacity-80">
+                      <defs>
+                        <radialGradient id="earthGradient" cx="0.3" cy="0.3">
+                          <stop offset="0%" stopColor="#4ade80" />
+                          <stop offset="40%" stopColor="#22c55e" />
+                          <stop offset="100%" stopColor="#1e40af" />
+                        </radialGradient>
+                      </defs>
+                      
+                      {/* Earth background */}
+                      <circle cx="100" cy="100" r="95" fill="url(#earthGradient)" />
+                      
+                      {/* Continents */}
+                      <g fill="#15803d" opacity="0.9">
+                        {/* North America */}
+                        <path d="M 30 60 Q 50 50 70 65 L 75 90 Q 60 95 45 85 Z" />
+                        {/* Europe/Asia */}
+                        <path d="M 85 45 Q 120 40 150 55 L 160 80 Q 140 85 110 75 Z" />
+                        {/* Africa */}
+                        <path d="M 90 85 Q 105 80 115 95 L 110 130 Q 100 135 95 120 Z" />
+                        {/* South America */}
+                        <path d="M 50 110 Q 60 105 65 120 L 60 150 Q 55 155 50 140 Z" />
+                        {/* Australia */}
+                        <path d="M 140 130 Q 155 125 165 135 L 160 145 Q 150 148 145 140 Z" />
+                      </g>
+                      
+                      {/* Cloud layer */}
+                      <g fill="white" opacity="0.3">
+                        <ellipse cx="70" cy="50" rx="15" ry="8" />
+                        <ellipse cx="130" cy="70" rx="20" ry="10" />
+                        <ellipse cx="90" cy="120" rx="18" ry="9" />
+                        <ellipse cx="140" cy="40" rx="12" ry="6" />
+                      </g>
+                    </svg>
+                    
+                    {/* Atmospheric glow */}
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-blue-300/20 to-transparent"></div>
+                  </div>
+                  
+                  {/* Earth rotation animation */}
+                  <div className="absolute inset-0 w-48 h-48 rounded-full animate-spin" style={{ animationDuration: '30s' }}>
+                    <div className="w-full h-full rounded-full bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Orbital Trajectories around Globe */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <svg viewBox="0 0 1000 500" className="w-full h-full">
-                  {/* Orbital paths for each satellite */}
                   {Object.entries(satellites).map(([satId, sat]) => {
                     const isSelected = satId === selectedSatellite
-                    
-                    // Create orbital ellipse path
                     const centerX = 500
                     const centerY = 250
-                    const radiusX = 300 + (Math.random() * 100)
-                    const radiusY = 150 + (Math.random() * 50)
-                    const rotation = Math.random() * 45
+                    
+                    // Different orbital parameters for each satellite
+                    const orbitalData = {
+                      'VO-52': { radiusX: 180, radiusY: 120, rotation: 15, speed: 0.8 },
+                      'HO-68': { radiusX: 200, radiusY: 100, rotation: -25, speed: 1.2 },
+                      'SO-50': { radiusX: 160, radiusY: 140, rotation: 45, speed: 0.6 },
+                      'AO-27': { radiusX: 220, radiusY: 80, rotation: -10, speed: 1.0 }
+                    }
+                    
+                    const orbital = orbitalData[satId as keyof typeof orbitalData] || orbitalData['VO-52']
+                    const time = Date.now() * 0.001 * orbital.speed
+                    const satIndex = Object.keys(satellites).indexOf(satId)
+                    const phaseOffset = satIndex * Math.PI / 2
+                    
+                    // Satellite position
+                    const satX = centerX + orbital.radiusX * Math.cos(time + phaseOffset)
+                    const satY = centerY + orbital.radiusY * Math.sin(time + phaseOffset)
                     
                     return (
                       <g key={satId}>
@@ -71,43 +128,66 @@ export function SatelliteTrackingDashboard() {
                         <ellipse
                           cx={centerX}
                           cy={centerY}
-                          rx={radiusX}
-                          ry={radiusY}
+                          rx={orbital.radiusX}
+                          ry={orbital.radiusY}
                           fill="none"
                           stroke={isSelected ? "#a855f7" : "#6b21a8"}
                           strokeWidth={isSelected ? 3 : 2}
-                          strokeDasharray={isSelected ? "none" : "10,5"}
-                          opacity={isSelected ? 1 : 0.4}
-                          transform={`rotate(${rotation} ${centerX} ${centerY})`}
+                          strokeDasharray={isSelected ? "none" : "8,4"}
+                          opacity={isSelected ? 0.9 : 0.4}
+                          transform={`rotate(${orbital.rotation} ${centerX} ${centerY})`}
                         />
                         
-                        {/* Satellite position on orbit */}
-                        <circle
-                          cx={centerX + radiusX * Math.cos(Date.now() * 0.001 + Object.keys(satellites).indexOf(satId))}
-                          cy={centerY + radiusY * Math.sin(Date.now() * 0.001 + Object.keys(satellites).indexOf(satId))}
-                          r={isSelected ? 8 : 5}
-                          fill={sat.status === "active" ? "#10b981" : 
-                                sat.status === "maintenance" ? "#f59e0b" : "#ef4444"}
-                          stroke={isSelected ? "#a855f7" : "none"}
-                          strokeWidth="2"
-                        >
-                          {/* Pulsing animation for selected satellite */}
-                          {isSelected && (
-                            <animate attributeName="r" values="8;12;8" dur="2s" repeatCount="indefinite" />
-                          )}
-                        </circle>
+                        {/* Satellite trail */}
+                        <g transform={`rotate(${orbital.rotation} ${centerX} ${centerY})`}>
+                          {Array.from({length: 20}, (_, i) => {
+                            const trailTime = time + phaseOffset - (i * 0.1)
+                            const trailX = centerX + orbital.radiusX * Math.cos(trailTime)
+                            const trailY = centerY + orbital.radiusY * Math.sin(trailTime)
+                            const opacity = (20 - i) / 30
+                            
+                            return (
+                              <circle
+                                key={i}
+                                cx={trailX}
+                                cy={trailY}
+                                r="1.5"
+                                fill={isSelected ? "#a855f7" : "#6b21a8"}
+                                opacity={opacity * (isSelected ? 0.8 : 0.3)}
+                              />
+                            )
+                          })}
+                        </g>
                         
-                        {/* Satellite label */}
-                        <text
-                          x={centerX + radiusX * Math.cos(Date.now() * 0.001 + Object.keys(satellites).indexOf(satId)) + 15}
-                          y={centerY + radiusY * Math.sin(Date.now() * 0.001 + Object.keys(satellites).indexOf(satId)) - 10}
-                          fill="white"
-                          fontSize={isSelected ? "14" : "12"}
-                          fontWeight={isSelected ? "bold" : "normal"}
-                          fontFamily="monospace"
-                        >
-                          {satId}
-                        </text>
+                        {/* Satellite */}
+                        <g transform={`rotate(${orbital.rotation} ${centerX} ${centerY})`}>
+                          <circle
+                            cx={centerX + orbital.radiusX * Math.cos(time + phaseOffset)}
+                            cy={centerY + orbital.radiusY * Math.sin(time + phaseOffset)}
+                            r={isSelected ? 8 : 5}
+                            fill={sat.status === "active" ? "#10b981" : 
+                                  sat.status === "maintenance" ? "#f59e0b" : "#ef4444"}
+                            stroke={isSelected ? "#a855f7" : "#ffffff"}
+                            strokeWidth={isSelected ? 3 : 1}
+                          >
+                            {isSelected && (
+                              <animate attributeName="r" values="8;12;8" dur="2s" repeatCount="indefinite" />
+                            )}
+                          </circle>
+                          
+                          {/* Satellite label */}
+                          <text
+                            x={centerX + orbital.radiusX * Math.cos(time + phaseOffset) + 15}
+                            y={centerY + orbital.radiusY * Math.sin(time + phaseOffset) - 10}
+                            fill="white"
+                            fontSize={isSelected ? "14" : "12"}
+                            fontWeight={isSelected ? "bold" : "normal"}
+                            fontFamily="monospace"
+                            textShadow="2px 2px 4px rgba(0,0,0,0.8)"
+                          >
+                            {satId}
+                          </text>
+                        </g>
                       </g>
                     )
                   })}
@@ -116,12 +196,12 @@ export function SatelliteTrackingDashboard() {
 
               {/* Selected Satellite Info Panel */}
               {satellite && (
-                <div className="absolute top-4 left-4 bg-black/90 border border-purple-500/70 rounded-lg p-4 text-white max-w-sm">
+                <div className="absolute top-4 left-4 bg-black/90 border border-purple-500/70 rounded-lg p-4 text-white max-w-sm backdrop-blur-sm">
                   <div className="flex items-center gap-2 mb-3">
                     <div className={`w-3 h-3 rounded-full ${
                       satellite.status === "active" ? "bg-green-500" : 
                       satellite.status === "maintenance" ? "bg-yellow-500" : "bg-red-500"
-                    }`}></div>
+                    } animate-pulse`}></div>
                     <h3 className="text-lg font-bold text-purple-400">
                       {satellite.name} ({satellite.id})
                     </h3>
@@ -162,19 +242,23 @@ export function SatelliteTrackingDashboard() {
               )}
 
               {/* Timestamp */}
-              <div className="absolute top-4 right-4 bg-black/90 border border-purple-500/70 rounded px-3 py-1 text-purple-300 font-mono text-sm">
+              <div className="absolute top-4 right-4 bg-black/90 border border-purple-500/70 rounded px-3 py-1 text-purple-300 font-mono text-sm backdrop-blur-sm">
                 {new Date().toISOString().slice(0, 19)}Z
               </div>
 
-              {/* Scale indicator */}
-              <div className="absolute bottom-4 left-4 bg-black/90 border border-purple-500/70 rounded px-3 py-2 text-white text-xs">
+              {/* Legend */}
+              <div className="absolute bottom-4 left-4 bg-black/90 border border-purple-500/70 rounded px-3 py-2 text-white text-xs backdrop-blur-sm">
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-4 h-1 bg-purple-500"></div>
                   <span>Orbital Track</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   <span>Active Satellite</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-green-600 rounded-full border border-blue-400/50"></div>
+                  <span>Earth</span>
                 </div>
               </div>
 
@@ -186,7 +270,7 @@ export function SatelliteTrackingDashboard() {
                   onClick={() => setViewMode("map")}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
-                  Map View
+                  Globe View
                 </Button>
                 <Button
                   size="sm"
