@@ -15,15 +15,30 @@ declare global {
   }
 }
 
-const MapContainer = dynamic(() => import("react-leaflet").then((mod) => ({ default: mod.MapContainer })), {
-  ssr: false,
-})
-const TileLayer = dynamic(() => import("react-leaflet").then((mod) => ({ default: mod.TileLayer })), { ssr: false })
-const Marker = dynamic(() => import("react-leaflet").then((mod) => ({ default: mod.Marker })), { ssr: false })
-const Popup = dynamic(() => import("react-leaflet").then((mod) => ({ default: mod.Popup })), { ssr: false })
-const Circle = dynamic(() => import("react-leaflet").then((mod) => ({ default: mod.Circle })), { ssr: false })
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.MapContainer),
+  { ssr: false }
+) as any
 
-// ... rest of your component stays the same
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false }
+) as any
+
+const Marker = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Marker),
+  { ssr: false }
+) as any
+
+const Popup = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Popup),
+  { ssr: false }
+) as any
+
+const Circle = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Circle),
+  { ssr: false }
+) as any
 
 
 interface MonitoringStation {
