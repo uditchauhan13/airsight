@@ -25,6 +25,9 @@ export function Header() {
           <Link href="/dashboard" className="text-foreground hover:text-primary transition-colors">
             Dashboard
           </Link>
+          <Link href="/satellite-tracking" className="text-foreground hover:text-primary transition-colors">
+            Satellite Tracking
+          </Link>
           <a href="#contact" className="text-foreground hover:text-primary transition-colors">
             Contact
           </a>
