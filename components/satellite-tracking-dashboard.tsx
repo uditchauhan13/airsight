@@ -6,20 +6,20 @@ import { satellites } from "@/lib/satellite-data"
 import { SatelliteControlPanel } from "./satellite-tracking/satellite-control-panel"
 import { TechnicalReadouts } from "./satellite-tracking/technical-readouts"
 
-// Dynamic import of CesiumGlobe with proper typing
+// Fixed dynamic import - extract named export correctly
 const CesiumGlobe = dynamic(
-  () => import("./cesium-globe").then(mod => ({ default: mod.CesiumGlobe })),
+  () => import('./cesium-globe').then(mod => mod.CesiumGlobe),
   {
     ssr: false,
     loading: () => (
       <div className="w-full h-full flex items-center justify-center bg-black">
-        <div className="text-center text-white font-mono">
-          <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" />
+        <div className="text-white font-mono text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
           <div className="text-xl text-purple-300 mb-2">CESIUM EARTH ENGINE</div>
           <div className="text-sm text-gray-400">Loading Professional 3D Globe...</div>
         </div>
       </div>
-    ),
+    )
   }
 )
 
@@ -28,10 +28,11 @@ export function SatelliteTrackingDashboard() {
   const [viewMode, setViewMode] = useState<"map" | "3d">("3d")
   const [isClient, setIsClient] = useState(false)
 
-  const satellite = satellites[selectedSatellite]
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
-  // Ensure this runs only on client
-  useEffect(() => setIsClient(true), [])
+  const satellite = satellites[selectedSatellite]
 
   if (!isClient) {
     return (
@@ -46,19 +47,19 @@ export function SatelliteTrackingDashboard() {
 
   return (
     <div className="h-screen bg-black text-white flex">
-      {/* Main Globe Section */}
+      {/* Main Globe View */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="h-16 bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 border-b border-purple-500/50 flex items-center px-6">
+        {/* Professional Header */}
+        <div className="h-16 bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 border-b border-purple-500/50 flex items-center px-6">
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
+            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
             <h1 className="text-xl font-mono tracking-wider text-purple-300 font-bold">
               AIRSIGHT CESIUM ORBITAL TRACKING
             </h1>
           </div>
           <div className="ml-auto flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-400 rounded-full" />
+              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
               <span className="text-xs font-mono text-blue-300">CESIUM ENGINE</span>
             </div>
             <div className="text-sm font-mono text-green-400 bg-green-400/10 px-3 py-1 rounded">
@@ -68,45 +69,36 @@ export function SatelliteTrackingDashboard() {
               {new Date().toISOString().slice(0, 19)}Z
             </div>
           </div>
-        </header>
+        </div>
 
-        {/* Globe Container */}
-        <main className="flex-1 relative">
-          <CesiumGlobe
+        {/* Cesium Globe Container */}
+        <div className="flex-1 relative">
+          <CesiumGlobe 
             selectedSatellite={selectedSatellite}
             onSatelliteSelect={setSelectedSatellite}
           />
 
-          {/* Satellite Info Overlay */}
+          {/* Professional Overlays */}
           {satellite && (
             <div className="absolute top-6 left-6 bg-black/95 backdrop-blur border border-purple-500/70 rounded-lg p-4 font-mono text-sm shadow-2xl">
               <div className="flex items-center gap-3 mb-4">
-                <div
-                  className={`w-3 h-3 rounded-full ${
-                    satellite.status === "active"
-                      ? "bg-green-400 animate-pulse"
-                      : satellite.status === "maintenance"
-                      ? "bg-yellow-400 animate-pulse"
-                      : "bg-red-400"
-                  }`}
-                />
+                <div className={`w-3 h-3 rounded-full ${
+                  satellite.status === "active" ? "bg-green-400 animate-pulse" : 
+                  satellite.status === "maintenance" ? "bg-yellow-400 animate-pulse" : "bg-red-400"
+                }`}></div>
                 <div className="text-purple-300 font-bold tracking-wider">
                   {satellite.name} ({satellite.id})
                 </div>
               </div>
-
+              
               <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-xs">
                 <div>
                   <span className="text-gray-400">LATITUDE:</span>
-                  <div className="text-green-300 font-mono text-sm">
-                    {satellite.coordinates.latitude.toFixed(6)}°
-                  </div>
+                  <div className="text-green-300 font-mono text-sm">{satellite.coordinates.latitude.toFixed(6)}°</div>
                 </div>
                 <div>
                   <span className="text-gray-400">LONGITUDE:</span>
-                  <div className="text-green-300 font-mono text-sm">
-                    {satellite.coordinates.longitude.toFixed(6)}°
-                  </div>
+                  <div className="text-green-300 font-mono text-sm">{satellite.coordinates.longitude.toFixed(6)}°</div>
                 </div>
                 <div>
                   <span className="text-gray-400">ALTITUDE:</span>
@@ -125,7 +117,7 @@ export function SatelliteTrackingDashboard() {
                   <div className="text-purple-300 font-mono text-sm">{satellite.orbital.elevation}°</div>
                 </div>
               </div>
-
+              
               <div className="mt-4 pt-3 border-t border-purple-500/30">
                 <div className="text-gray-400 text-xs">ORGANIZATION:</div>
                 <div className="text-white text-sm">{satellite.organization}</div>
@@ -135,53 +127,58 @@ export function SatelliteTrackingDashboard() {
             </div>
           )}
 
-          {/* Cesium Controls */}
+          {/* Cesium Controls Info */}
           <div className="absolute top-6 right-6 bg-black/95 backdrop-blur border border-purple-500/70 rounded-lg p-4 font-mono text-xs shadow-2xl">
             <div className="text-purple-300 font-bold mb-3 tracking-wider">CESIUM CONTROLS</div>
             <div className="space-y-2 text-gray-300">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full" /> LEFT CLICK + DRAG: Rotate Globe
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span>LEFT CLICK + DRAG: Rotate Globe</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-400 rounded-full" /> RIGHT CLICK + DRAG: Pan View
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <span>RIGHT CLICK + DRAG: Pan View</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-yellow-400 rounded-full" /> SCROLL: Zoom In/Out
+                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                <span>SCROLL: Zoom In/Out</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-purple-400 rounded-full" /> CLICK SATELLITE: Select
+                <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                <span>CLICK SATELLITE: Select</span>
               </div>
             </div>
           </div>
 
-          {/* Status Bar */}
+          {/* Professional Status Bar */}
           <div className="absolute bottom-6 left-6 right-6">
             <div className="bg-black/95 backdrop-blur border border-purple-500/70 rounded-lg p-4 font-mono text-sm flex items-center justify-between shadow-2xl">
               <div className="flex items-center gap-8">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
+                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
                   <span className="text-green-300">REAL EARTH IMAGERY</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse" />
+                  <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
                   <span className="text-blue-300">CESIUM TERRAIN</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse" />
+                  <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse"></div>
                   <span className="text-purple-300">ORBITAL TRACKING</span>
                 </div>
               </div>
+              
               <div className="text-gray-300 text-xs">
                 TRACKING {Object.keys(satellites).length} SATELLITES | CESIUM v1.111
               </div>
             </div>
           </div>
-        </main>
+        </div>
       </div>
 
-      {/* Control Panel */}
-      <aside className="w-96 bg-gradient-to-b from-gray-900 via-gray-800 to-black border-l border-purple-500/50 flex flex-col shadow-2xl">
-        <SatelliteControlPanel
+      {/* Professional Control Panel */}
+      <div className="w-96 bg-gradient-to-b from-gray-900 via-gray-800 to-black border-l border-purple-500/50 flex flex-col shadow-2xl">
+        <SatelliteControlPanel 
           selectedSatellite={selectedSatellite}
           onSatelliteChange={setSelectedSatellite}
           viewMode={viewMode}
@@ -190,7 +187,7 @@ export function SatelliteTrackingDashboard() {
         <div className="flex-1 overflow-y-auto">
           <TechnicalReadouts satellite={selectedSatellite} />
         </div>
-      </aside>
+      </div>
     </div>
   )
 }
