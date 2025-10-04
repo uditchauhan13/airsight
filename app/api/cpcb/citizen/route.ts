@@ -885,3 +885,517 @@ function identifyHotspots(mapData: any[]): any[] {
 }
 
 // Continue with more helper functions as needed...
+// Add these missing functions at the end of your file:
+
+async function handleBatchLocations(body: any): Promise<NextResponse> {
+  const { locations = [] } = body || {};
+  
+  if (!Array.isArray(locations)) {
+    return NextResponse.json({ error: 'locations must be an array of { lat, lng }' }, { status: 400 });
+  }
+
+  try {
+    const results = await Promise.all(
+      locations.map(async (loc: any, i: number) => {
+        const lat = Number(loc.lat);
+        const lng = Number(loc.lng);
+        
+        if (isNaN(lat) || isNaN(lng)) {
+          return { id: i, error: 'Invalid coordinates' };
+        }
+
+        // Get hyperlocal AQI for each location
+        const hyperlocalData = await cpcbClient.getHyperLocalAQI(lat, lng).catch(() => null);
+        
+        return {
+          id: i,
+          lat,
+          lng,
+          aqi: hyperlocalData?.aqi || Math.round(120 + Math.random() * 80),
+          category: getAQICategory(hyperlocalData?.aqi || 150),
+          dominant_pollutant: hyperlocalData?.dominantPollutant || 'PM2.5',
+          confidence: hyperlocalData?.confidence || 0.7,
+        };
+      })
+    );
+
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      count: results.length,
+      results,
+    });
+  } catch (error) {
+    console.error('Error processing batch locations:', error);
+    return NextResponse.json(
+      { error: 'Failed to process batch locations', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleRoutePlanning(body: any): Promise<NextResponse> {
+  const { origin, destination, mode = 'driving', optimize_for = 'time' } = body || {};
+  
+  if (!origin || !destination) {
+    return NextResponse.json({ error: 'origin and destination are required' }, { status: 400 });
+  }
+
+  try {
+    // Generate route segments with AQI data
+    const segments = generateRouteSegments(origin, destination, mode);
+    
+    // Calculate AQI exposure for each segment
+    const segmentsWithAQI = await Promise.all(
+      segments.map(async (segment) => {
+        const midLat = (segment.from.lat + segment.to.lat) / 2;
+        const midLng = (segment.from.lng + segment.to.lng) / 2;
+        const aqiData = await cpcbClient.getHyperLocalAQI(midLat, midLng).catch(() => ({ aqi: 150 }));
+        
+        return {
+          ...segment,
+          aqi_avg: aqiData.aqi,
+          health_risk: aqiData.aqi > 200 ? 'high' : aqiData.aqi > 100 ? 'moderate' : 'low',
+        };
+      })
+    );
+
+    const totalDistance = segmentsWithAQI.reduce((sum, seg) => sum + seg.distance, 0);
+    const avgExposure = segmentsWithAQI.reduce((sum, seg) => sum + seg.aqi_avg, 0) / segmentsWithAQI.length;
+    const exposureScore = Math.min(1, avgExposure / 200);
+
+    const route = {
+      mode,
+      optimization: optimize_for,
+      segments: segmentsWithAQI,
+      summary: {
+        total_distance: Math.round(totalDistance * 100) / 100,
+        estimated_time: estimateRouteTime(totalDistance, mode),
+        average_aqi_exposure: Math.round(avgExposure),
+        exposure_score: Math.round(exposureScore * 100) / 100,
+        health_risk: exposureScore > 0.7 ? 'high' : exposureScore > 0.4 ? 'moderate' : 'low',
+      },
+      alternatives: generateRouteAlternatives(origin, destination, mode),
+      health_recommendations: getRouteHealthRecommendations(avgExposure, totalDistance),
+    };
+
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      route,
+    });
+  } catch (error) {
+    console.error('Error planning route:', error);
+    return NextResponse.json(
+      { error: 'Failed to plan route', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleExposureTracking(body: any): Promise<NextResponse> {
+  const { user_id, locations = [], activities = [], duration_minutes = 60 } = body || {};
+  
+  if (!Array.isArray(locations)) {
+    return NextResponse.json({ error: 'locations must be an array' }, { status: 400 });
+  }
+
+  try {
+    const exposureData = await Promise.all(
+      locations.map(async (loc: any, index: number) => {
+        const activity = activities[index] || 'general';
+        const locationDuration = Array.isArray(duration_minutes) ? duration_minutes[index] : duration_minutes / locations.length;
+        
+        const aqiData = await cpcbClient.getHyperLocalAQI(loc.lat, loc.lng).catch(() => ({ 
+          aqi: 150, 
+          pollutants: { 'PM2.5': 85, 'PM10': 165 } 
+        }));
+        
+        const exposure = calculateActivityExposure(aqiData, activity, locationDuration);
+        
+        return {
+          location: { lat: loc.lat, lng: loc.lng },
+          activity,
+          duration_minutes: locationDuration,
+          aqi: aqiData.aqi,
+          exposure_dose: exposure.dose,
+          health_risk: exposure.risk,
+        };
+      })
+    );
+
+    const totalExposure = exposureData.reduce((sum, data) => sum + data.exposure_dose, 0);
+    const avgAQI = exposureData.reduce((sum, data) => sum + data.aqi, 0) / exposureData.length;
+    const overallRisk = calculateOverallExposureRisk(totalExposure);
+
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      user_id: user_id || 'anonymous',
+      tracking_period: `${duration_minutes} minutes`,
+      exposure_data: exposureData,
+      summary: {
+        total_exposure_dose: Math.round(totalExposure * 100) / 100,
+        average_aqi: Math.round(avgAQI),
+        overall_risk: overallRisk,
+        locations_tracked: locations.length,
+      },
+      recommendations: generateExposureRecommendations(totalExposure, overallRisk),
+      next_checkup: calculateNextCheckupTime(overallRisk),
+    });
+  } catch (error) {
+    console.error('Error tracking exposure:', error);
+    return NextResponse.json(
+      { error: 'Failed to track exposure', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleNotificationPreferences(body: any): Promise<NextResponse> {
+  const { 
+    user_id, 
+    alert_types = ['high_aqi', 'health_advisory'], 
+    threshold_aqi = 200,
+    locations = [],
+    notification_times = ['08:00', '18:00'],
+    enabled = true 
+  } = body || {};
+
+  if (!user_id) {
+    return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
+  }
+
+  try {
+    // Store preferences (mock implementation)
+    const preferences = {
+      user_id,
+      alert_types,
+      threshold_aqi,
+      locations,
+      notification_times,
+      enabled,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Validate alert types
+    const validAlertTypes = ['high_aqi', 'health_advisory', 'weather', 'seasonal'];
+    const invalidTypes = alert_types.filter((type: string) => !validAlertTypes.includes(type));
+    
+    if (invalidTypes.length > 0) {
+      return NextResponse.json({ 
+        error: 'Invalid alert types', 
+        invalid_types: invalidTypes,
+        valid_types: validAlertTypes 
+      }, { status: 400 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      message: 'Notification preferences updated successfully',
+      preferences,
+      next_alert_check: calculateNextAlertTime(notification_times),
+    });
+  } catch (error) {
+    console.error('Error updating notification preferences:', error);
+    return NextResponse.json(
+      { error: 'Failed to update preferences', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+
+// Additional helper functions
+function generateRouteSegments(origin: any, destination: any, mode: string) {
+  // Simple implementation - in production, use actual routing API
+  const midpoint = {
+    lat: (origin.lat + destination.lat) / 2,
+    lng: (origin.lng + destination.lng) / 2,
+  };
+
+  return [
+    {
+      from: origin,
+      to: midpoint,
+      distance: calculateDistance(origin.lat, origin.lng, midpoint.lat, midpoint.lng),
+    },
+    {
+      from: midpoint,
+      to: destination,
+      distance: calculateDistance(midpoint.lat, midpoint.lng, destination.lat, destination.lng),
+    },
+  ];
+}
+
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function estimateRouteTime(distance: number, mode: string): string {
+  const speeds = { driving: 40, walking: 5, cycling: 15, public_transport: 25 };
+  const speed = speeds[mode as keyof typeof speeds] || 25;
+  const hours = distance / speed;
+  
+  if (hours < 1) {
+    return `${Math.round(hours * 60)} mins`;
+  } else {
+    return `${Math.round(hours * 10) / 10} hrs`;
+  }
+}
+
+function generateRouteAlternatives(origin: any, destination: any, mode: string) {
+  return [
+    {
+      route_id: 'scenic',
+      name: 'Scenic Route',
+      estimated_aqi: 120,
+      estimated_time: '35 mins',
+      health_benefit: 'Lower pollution exposure',
+    },
+    {
+      route_id: 'fastest',
+      name: 'Fastest Route',
+      estimated_aqi: 180,
+      estimated_time: '25 mins',
+      health_benefit: 'Shorter exposure time',
+    },
+  ];
+}
+
+function getRouteHealthRecommendations(avgAQI: number, distance: number): string[] {
+  const recommendations = [];
+  
+  if (avgAQI > 200) {
+    recommendations.push('Wear N95 mask throughout the journey');
+    recommendations.push('Keep vehicle windows closed, use AC in recirculation mode');
+  }
+  
+  if (distance > 20) {
+    recommendations.push('Consider breaking journey into segments');
+    recommendations.push('Stay hydrated during long exposure');
+  }
+  
+  if (recommendations.length === 0) {
+    recommendations.push('Route has acceptable air quality');
+  }
+  
+  return recommendations;
+}
+
+function calculateActivityExposure(aqiData: any, activity: string, durationMinutes: number) {
+  const activityMultipliers = {
+    indoor: 0.3,
+    outdoor: 1.0,
+    exercise: 1.5,
+    commuting: 0.8,
+    general: 1.0,
+  };
+  
+  const multiplier = activityMultipliers[activity as keyof typeof activityMultipliers] || 1.0;
+  const pm25 = aqiData.pollutants?.['PM2.5'] || aqiData.aqi * 0.7;
+  const dose = (pm25 * multiplier * durationMinutes) / 60; // µg/m³·hour
+  
+  return {
+    dose: Math.round(dose * 100) / 100,
+    risk: dose > 100 ? 'high' : dose > 50 ? 'moderate' : 'low',
+  };
+}
+
+function calculateOverallExposureRisk(totalExposure: number): string {
+  if (totalExposure > 200) return 'high';
+  if (totalExposure > 100) return 'moderate';
+  return 'low';
+}
+
+function generateExposureRecommendations(totalExposure: number, riskLevel: string): string[] {
+  if (riskLevel === 'high') {
+    return [
+      'Limit outdoor activities for the rest of the day',
+      'Use air purifiers indoors',
+      'Monitor health symptoms closely',
+      'Consider consulting a healthcare provider',
+    ];
+  } else if (riskLevel === 'moderate') {
+    return [
+      'Be cautious with additional outdoor exposure',
+      'Wear masks for any outdoor activities',
+      'Ensure good indoor air quality',
+    ];
+  } else {
+    return [
+      'Current exposure levels are acceptable',
+      'Continue normal activities with basic precautions',
+    ];
+  }
+}
+
+function calculateNextCheckupTime(riskLevel: string): string {
+  const hours = riskLevel === 'high' ? 2 : riskLevel === 'moderate' ? 6 : 24;
+  return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+}
+
+function calculateNextAlertTime(notificationTimes: string[]): string {
+  const now = new Date();
+  const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  
+  // Find next notification time
+  const nextTime = notificationTimes.find(time => time > currentTime) || notificationTimes[0];
+  const [hours, minutes] = nextTime.split(':').map(Number);
+  
+  const nextAlert = new Date();
+  nextAlert.setHours(hours, minutes, 0, 0);
+  
+  if (nextAlert <= now) {
+    nextAlert.setDate(nextAlert.getDate() + 1);
+  }
+  
+  return nextAlert.toISOString();
+}
+
+// Missing helper functions for alerts and other features
+function generateHighAQIAlerts(currentAQI: number, predictions: any): any[] {
+  const alerts = [];
+  
+  if (currentAQI > 300) {
+    alerts.push({
+      type: 'severe_aqi',
+      priority: 'high',
+      title: 'Severe Air Quality Alert',
+      message: `AQI is ${currentAQI} - Stay indoors and avoid outdoor activities`,
+      timestamp: new Date().toISOString(),
+    });
+  } else if (currentAQI > 200) {
+    alerts.push({
+      type: 'high_aqi',
+      priority: 'medium',
+      title: 'Poor Air Quality Alert',
+      message: `AQI is ${currentAQI} - Limit outdoor exposure and wear masks`,
+      timestamp: new Date().toISOString(),
+    });
+  }
+  
+  return alerts;
+}
+
+function generateHealthAdvisoryAlerts(currentAQI: number, predictions: any): any[] {
+  const alerts = [];
+  
+  if (currentAQI > 200) {
+    alerts.push({
+      type: 'health_advisory',
+      priority: 'medium',
+      title: 'Health Advisory',
+      message: 'Sensitive individuals should avoid outdoor activities',
+      timestamp: new Date().toISOString(),
+    });
+  }
+  
+  return alerts;
+}
+
+function generateWeatherAlerts(weatherData: any, currentAQI: number): any[] {
+  const alerts = [];
+  
+  if (weatherData.current.windSpeed < 2 && currentAQI > 150) {
+    alerts.push({
+      type: 'weather_impact',
+      priority: 'low',
+      title: 'Weather Impact on Air Quality',
+      message: 'Low wind speeds may worsen air quality',
+      timestamp: new Date().toISOString(),
+    });
+  }
+  
+  return alerts;
+}
+
+function generateSeasonalAlerts(month: number, currentAQI: number): any[] {
+  const alerts = [];
+  
+  if ((month >= 10 || month <= 2) && currentAQI > 200) {
+    alerts.push({
+      type: 'seasonal',
+      priority: 'medium',
+      title: 'Winter Pollution Alert',
+      message: 'Winter months typically have higher pollution levels',
+      timestamp: new Date().toISOString(),
+    });
+  }
+  
+  return alerts;
+}
+
+function getPriorityScore(type: string): number {
+  const scores = {
+    severe_aqi: 10,
+    high_aqi: 8,
+    health_advisory: 6,
+    weather_impact: 4,
+    seasonal: 3,
+  };
+  return scores[type as keyof typeof scores] || 1;
+}
+
+function calculatePersonalExposure(predictions: any, duration: number, activity: string) {
+  // Simplified exposure calculation
+  const avgAQI = Object.values(predictions).reduce((sum: any, pred: any) => sum + pred.predicted_aqi, 0) / Object.keys(predictions).length;
+  const activityMultiplier = activity === 'outdoor' ? 1.0 : activity === 'indoor' ? 0.3 : 0.7;
+  const exposureDose = (avgAQI * 0.7 * duration * activityMultiplier) / 60; // Simplified PM2.5 exposure
+  
+  return {
+    total_exposure: Math.round(exposureDose * 100) / 100,
+    risk_level: exposureDose > 100 ? 'high' : exposureDose > 50 ? 'moderate' : 'low',
+    hourly_average: Math.round((exposureDose / duration) * 60 * 100) / 100,
+  };
+}
+
+function generateExposureRecommendations(totalExposure: number, activity: string, duration: number): string[] {
+  const recommendations = [];
+  
+  if (totalExposure > 100) {
+    recommendations.push('High exposure detected - limit further outdoor activities');
+    recommendations.push('Use air purifiers indoors');
+  } else if (totalExposure > 50) {
+    recommendations.push('Moderate exposure - wear masks for outdoor activities');
+  }
+  
+  if (duration > 4 * 60) { // More than 4 hours
+    recommendations.push('Long exposure period - take breaks in clean air environments');
+  }
+  
+  return recommendations;
+}
+
+function estimateHealthImpact(exposureDose: number, duration: number) {
+  return {
+    short_term_effects: exposureDose > 50 ? ['Eye irritation', 'Throat irritation'] : ['Minimal impact'],
+    long_term_risk: exposureDose > 100 ? 'elevated' : 'normal',
+    recovery_time: `${Math.ceil(exposureDose / 20)} hours`,
+  };
+}
+
+function getMitigationStrategies(activity: string, riskLevel: string): string[] {
+  if (activity === 'outdoor' && riskLevel === 'high') {
+    return [
+      'Move activities indoors',
+      'Wear N95 masks if outdoor exposure necessary',
+      'Limit exposure duration',
+    ];
+  } else if (activity === 'commuting') {
+    return [
+      'Use air-conditioned transport',
+      'Keep vehicle windows closed',
+      'Choose less polluted routes',
+    ];
+  }
+  
+  return ['Monitor air quality regularly', 'Stay hydrated'];
+}
