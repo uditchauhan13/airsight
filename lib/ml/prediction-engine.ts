@@ -393,13 +393,16 @@ export class PredictionEngine {
       pressure: [], precipitation: [], cloud_cover: [],
     };
 
-    const satellite_features = satelliteData.status === 'fulfilled' ? {
-      aod: satelliteData.value.map((d: any) => d.aod),
-      aerosol_index: satelliteData.value.map((d: any) => d.angstromExponent),
-      fire_count: fireData.status === 'fulfilled' ? [fireData.value.length] : ,
-    } : {
-      aod: [], aerosol_index: [], fire_count: ,
-    };
+  const satellite_features = satelliteData.status === 'fulfilled' ? {
+  aod: satelliteData.value.map((d: any) => d.aod),
+  aerosol_index: satelliteData.value.map((d: any) => d.angstromExponent),
+  fire_count: fireData.status === 'fulfilled' ? [fireData.value.length] : [0],
+} : {
+  aod: [],
+  aerosol_index: [],
+  fire_count: [0],
+};
+
 
     // Generate temporal, location, and emission features
     const now = new Date();
