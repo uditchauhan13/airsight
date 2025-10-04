@@ -100,7 +100,8 @@ async function handleHyperlocalAQI(searchParams: URLSearchParams): Promise<NextR
     
     const locationInsights = await generateLocationInsights(lat, lng, hyperlocalData);
     const currentMonth = new Date().getMonth() + 1;
-    const seasonalContext = seasonalAnalysisSystem.analyzeCurrentSeason(currentMonth, hyperlocalData.aqi);
+    const currentAQI = Array.isArray(hyperlocalData) ? 150 : hyperlocalData.aqi;
+const seasonalContext = seasonalAnalysisSystem.analyzeCurrentSeason(currentMonth, currentAQI);
     
     return NextResponse.json({
       success: true,
