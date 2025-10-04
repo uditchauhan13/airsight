@@ -8,11 +8,17 @@
     "lint": "next lint",
     "start": "next start"
   },
-  "dependencies": {
+  "dependencies": { 
     "@emotion/is-prop-valid": "latest",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
+     "axios": "^1.6.0",
+      "@tensorflow/tfjs": "^4.0.0",
+  "ml-matrix": "^6.10.0",
+  "node-cron": "^3.0.0",
+  "lodash": "^4.17.21",
+  "moment": "^2.29.4",     
     "@radix-ui/react-aspect-ratio": "1.1.1",
     "@radix-ui/react-avatar": "1.1.2",
     "@radix-ui/react-checkbox": "1.1.3",
