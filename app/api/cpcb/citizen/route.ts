@@ -180,10 +180,12 @@ async function handlePredictions(searchParams: URLSearchParams): Promise<NextRes
       predictions: formattedPredictions,
       risk_assessment: predictionResponse.risk_assessment,
       activity_recommendations: activityRecommendations,
-      model_info: {
-        last_updated: predictionResponse.model_info.training_date,
-        accuracy_note: 'Predictions based on advanced ML models with 85-90% accuracy',
-      },
+    model_info: {
+  last_updated: predictionResponse?.model_info?.training_date || new Date().toISOString(),
+  accuracy_note: 'Predictions based on advanced ML models with 85-90% accuracy',
+},
+
+
     });
   } catch (error) {
     console.error('Error getting predictions:', error);
