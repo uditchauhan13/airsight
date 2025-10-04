@@ -156,19 +156,19 @@ async function handlePredictions(searchParams: URLSearchParams): Promise<NextRes
         '6h': { predicted_aqi: 160, category: 'Moderate', confidence_score: 0.85, health_message: 'Sensitive groups limit exposure', confidence_interval: { lower: 145, upper: 175 } },
         '12h': { predicted_aqi: 175, category: 'Moderate', confidence_score: 0.8, health_message: 'Consider masks outdoors', confidence_interval: { lower: 155, upper: 195 } },
         '24h': { predicted_aqi: 190, category: 'Moderate', confidence_score: 0.75, health_message: 'Limit outdoor activities', confidence_interval: { lower: 165, upper: 215 } },
-      },
+      } as Record<string, any>,
       location: { latitude: lat, longitude: lng },
       risk_assessment: { level: 'moderate', health_advisory: 'Monitor conditions', probability_exceeds_300: 0.1 },
       model_info: { training_date: new Date().toISOString() }
     }));
     
-    const formattedPredictions = Object.keys(predictionResponse.predictions).map(horizon => ({
+    const formattedPredictions = Object.entries(predictionResponse.predictions).map(([horizon, prediction]) => ({
       time_horizon: horizon,
-      predicted_aqi: predictionResponse.predictions[horizon].predicted_aqi,
-      category: predictionResponse.predictions[horizon].category,
-      confidence: Math.round(predictionResponse.predictions[horizon].confidence_score * 100),
-      health_message: predictionResponse.predictions[horizon].health_message,
-      range: predictionResponse.predictions[horizon].confidence_interval,
+      predicted_aqi: prediction.predicted_aqi,
+      category: prediction.category,
+      confidence: Math.round(prediction.confidence_score * 100),
+      health_message: prediction.health_message,
+      range: prediction.confidence_interval,
     }));
     
     const activityRecommendations = generateActivityRecommendations(predictionResponse.predictions, predictionResponse.risk_assessment);
@@ -190,6 +190,7 @@ async function handlePredictions(searchParams: URLSearchParams): Promise<NextRes
     return NextResponse.json({ error: 'Failed to get predictions' }, { status: 500 });
   }
 }
+
 
 async function handleHealthAdvisory(searchParams: URLSearchParams): Promise<NextResponse> {
   const lat = parseFloat(searchParams.get('lat') || '28.7041');
