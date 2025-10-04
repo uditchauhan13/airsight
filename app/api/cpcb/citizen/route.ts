@@ -266,7 +266,7 @@ const nearbyStations = mockStations
     const stationsWithData = await Promise.all(
       nearbyStations.map(async (station) => {
         try {
-          const currentData = await cpcbClient.getRealTimeData(station.id);
+          const currentData = await cpcbClient.getRealtimeAQI(station.id);
           return {
             ...station,
             current_aqi: currentData.aqi,
