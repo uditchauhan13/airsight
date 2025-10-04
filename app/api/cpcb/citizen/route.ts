@@ -296,7 +296,8 @@ async function handleAirQualityMap(searchParams: URLSearchParams): Promise<NextR
   
   try {
     const [lat1, lng1, lat2, lng2] = bounds.split(',').map(Number);
-    const gridResolution = { low: 0.05, medium: 0.02, high: 0.01 }[resolution as keyof typeof { low: 0.05, medium: 0.02, high: 0.01 }] || 0.02;
+    const resolutionMap = { low: 0.05, medium: 0.02, high: 0.01 };
+const gridResolution = resolutionMap[resolution as keyof typeof resolutionMap] || 0.02;
     const gridPoints = generateGridPoints(lat1, lng1, lat2, lng2, gridResolution);
     
     // Mock batch processing for grid points
