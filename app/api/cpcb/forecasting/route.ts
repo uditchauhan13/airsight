@@ -343,7 +343,7 @@ async function gatherPredictionInput(
       wind_speed: weatherData ? [weatherData.current.windSpeed] : [],
       wind_direction: weatherData ? [weatherData.current.windDirection] : [],
       pressure: weatherData ? [weatherData.current.pressure] : [],
-      precipitation: , // Default no precipitation
+      precipitation:[] , // Default no precipitation
       cloud_cover: weatherData ? [weatherData.current.cloudCover] : [],
     };
     

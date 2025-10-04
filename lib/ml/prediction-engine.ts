@@ -386,7 +386,7 @@ export class PredictionEngine {
       wind_speed: [weatherData.value.current.windSpeed],
       wind_direction: [weatherData.value.current.windDirection],
       pressure: [weatherData.value.current.pressure],
-      precipitation: , // Default
+      precipitation:[] , // Default
       cloud_cover: [weatherData.value.current.cloudCover],
     } : {
       temperature: [], humidity: [], wind_speed: [], wind_direction: [],
