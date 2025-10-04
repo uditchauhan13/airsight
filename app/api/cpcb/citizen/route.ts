@@ -202,7 +202,7 @@ async function handleHealthAdvisory(searchParams: URLSearchParams): Promise<Next
   
   try {
     const hyperlocalData = await cpcbClient.getHyperLocalAQI(lat, lng).catch(() => ({ aqi: 150 }));
-    const currentAQI = hyperlocalData.aqi;
+    const currentAQI = Array.isArray(hyperlocalData) ? 150 : hyperlocalData.aqi;
     
     const predictions = await predictionEngine.predict({
       latitude: lat,
